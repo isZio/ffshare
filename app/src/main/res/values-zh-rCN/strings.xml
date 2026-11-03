@@ -24,7 +24,7 @@
     <string name="title_activity_logs">日志</string>
 
     <string name="version">版本：%s</string>
-    <string name="flavor" tools:ignore="MissingTranslation">风味: %s</string>
+    <string name="flavor" tools:ignore="MissingTranslation">渠道：%s</string>
 
 
     <string name="app_description">在分享图片和视频之前，通过FFmpeg压缩它们</string>
@@ -108,4 +108,36 @@
 
     <string name="settings_compression_preset">FFmpeg压缩预设</string>
     <string name="settings_compression_preset_summary">编码所需时间越长，输出质量越好；编码所需时间越短，输出质量越差</string>
+
+    <!-- 保存 -->
+    <string name="settings_saving_options_title">保存</string>
+    <string name="settings_auto_save">压缩完成后自动保存</string>
+    <string name="settings_auto_save_summary">在弹出分享面板之前，先把压缩文件另存到固定位置</string>
+    <string name="settings_auto_save_location">保存位置</string>
+    <string name="settings_auto_save_location_default">系统相册（Movies/FFShare、Pictures/FFShare、Music/FFShare）</string>
+    <string name="settings_auto_save_location_selected">自定义文件夹：%1$s</string>
+    <string name="settings_auto_save_reset">恢复为系统相册</string>
+    <string name="settings_auto_save_reset_summary">忘记上面选择的文件夹</string>
+
+    <!-- 存储 -->
+    <string name="settings_storage_options_title">存储</string>
+    <string name="settings_clear_cache">立即清理缓存</string>
+    <string name="settings_clear_cache_summary">压缩产生的临时文件，可放心删除</string>
+    <string name="settings_cache_size">临时文件占用：%1$s</string>
+    <string name="settings_cache_empty">没有临时文件</string>
+
+    <!-- 保存与缓存提示 -->
+    <string name="save_in_progress">正在保存…</string>
+    <string name="save_success_toast">已保存 %1$d 个文件到 %2$s</string>
+    <string name="save_partial_toast">已保存 %1$d 个，%2$d 个失败</string>
+    <string name="save_failed_toast">保存失败，文件将在缓存中保留一小时</string>
+    <string name="save_permission_needed">当前 Android 版本需要存储权限才能保存文件</string>
+    <string name="save_location_picked">保存位置：%1$s</string>
+    <string name="save_location_reset">已恢复为系统相册</string>
+    <string name="save_location_unavailable">该文件夹已不可写，请重新选择</string>
+    <string name="clear_cache_dialog_title">清理缓存？</string>
+    <string name="clear_cache_dialog_message">将删除 %1$d 个临时文件（%2$s）。已保存或已分享的文件不受影响。</string>
+    <string name="clear_cache_done">缓存已清理，释放 %1$s</string>
+    <string name="clear_cache_empty">缓存已经是空的</string>
+    <string name="clear_cache_confirm">清理</string>
 </resources>

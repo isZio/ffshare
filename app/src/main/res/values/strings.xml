@@ -108,4 +108,36 @@
 
     <string name="settings_compression_preset">FFmpeg compression preset</string>
     <string name="settings_compression_preset_summary">Slower speed with a higher quality output or faster speed with a lower quality output</string>
+
+    <!-- Saving -->
+    <string name="settings_saving_options_title">Saving</string>
+    <string name="settings_auto_save">Save compressed files automatically</string>
+    <string name="settings_auto_save_summary">Copy every compressed file to a permanent location before the share dialog opens</string>
+    <string name="settings_auto_save_location">Save location</string>
+    <string name="settings_auto_save_location_default">System gallery (Movies/FFShare, Pictures/FFShare, Music/FFShare)</string>
+    <string name="settings_auto_save_location_selected">Custom folder: %1$s</string>
+    <string name="settings_auto_save_reset">Use the system gallery again</string>
+    <string name="settings_auto_save_reset_summary">Forget the folder selected above</string>
+
+    <!-- Storage -->
+    <string name="settings_storage_options_title">Storage</string>
+    <string name="settings_clear_cache">Clear cache now</string>
+    <string name="settings_clear_cache_summary">Temporary compressed files, safe to delete</string>
+    <string name="settings_cache_size">Temporary files: %1$s</string>
+    <string name="settings_cache_empty">No temporary files</string>
+
+    <!-- Save / cache feedback -->
+    <string name="save_in_progress">Saving…</string>
+    <string name="save_success_toast">Saved %1$d file(s) to %2$s</string>
+    <string name="save_partial_toast">Saved %1$d file(s), %2$d failed</string>
+    <string name="save_failed_toast">Saving failed, files stay in the cache for one hour</string>
+    <string name="save_permission_needed">Storage permission is required to save files on this Android version</string>
+    <string name="save_location_picked">Save location: %1$s</string>
+    <string name="save_location_reset">Save location reset to the system gallery</string>
+    <string name="save_location_unavailable">That folder is no longer writable, please pick another one</string>
+    <string name="clear_cache_dialog_title">Clear cache?</string>
+    <string name="clear_cache_dialog_message">%1$d temporary file(s) (%2$s) will be deleted. Files already saved or shared are not affected.</string>
+    <string name="clear_cache_done">Cache cleared, %1$s freed</string>
+    <string name="clear_cache_empty">Cache is already empty</string>
+    <string name="clear_cache_confirm">Clear</string>
 </resources>

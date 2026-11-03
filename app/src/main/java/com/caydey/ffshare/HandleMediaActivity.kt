@@ -13,7 +13,10 @@ import androidx.appcompat.app.AppCompatActivity
 import com.caydey.ffshare.extensions.parcelable
 import com.caydey.ffshare.extensions.parcelableArrayList
 import com.caydey.ffshare.utils.MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE
+import com.caydey.ffshare.utils.MY_PERMISSIONS_REQUEST_WRITE_EXTERNAL_STORAGE
 import com.caydey.ffshare.utils.MediaCompressor
+import com.caydey.ffshare.utils.MediaSaver
+import com.caydey.ffshare.utils.Settings
 import com.caydey.ffshare.utils.Utils
 import timber.log.Timber
 
@@ -23,6 +26,10 @@ class HandleMediaActivity : AppCompatActivity() {
     // also without it there is a null error for applicationContext
     private val mediaCompressor: MediaCompressor by lazy { MediaCompressor(applicationContext) }
     private val utils: Utils by lazy { Utils(applicationContext) }
+    private val settings: Settings by lazy { Settings(applicationContext) }
+
+    // files waiting for the storage permission before they can be copied to the gallery
+    private var pendingSaveUris: ArrayList<Uri>? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -57,6 +64,21 @@ class HandleMediaActivity : AppCompatActivity() {
             Timber.d("Read permissions granted, continuing...")
             onMediaReceive()
         }
+        // API < 29 needs the write permission to copy the output into the gallery
+        if (requestCode == MY_PERMISSIONS_REQUEST_WRITE_EXTERNAL_STORAGE) {
+            val uris = pendingSaveUris
+            pendingSaveUris = null
+            if (uris == null) return
+            if (utils.isWritePermissionGranted) {
+                Timber.d("Write permission granted, saving again")
+                saveThenShare(uris)
+            } else {
+                Timber.d("Write permission denied, skipping the automatic save")
+                Toast.makeText(this, getString(R.string.save_permission_needed), Toast.LENGTH_LONG).show()
+                shareMedia(uris)
+                finish()
+            }
+        }
     }
 
     private fun onMediaReceive() {
@@ -76,12 +98,44 @@ class HandleMediaActivity : AppCompatActivity() {
         } else {
             // callback
             mediaCompressor.compressFiles(this, receivedMedia) { compressedMedia ->
-                if (compressedMedia.isNotEmpty()) {
+                if (compressedMedia.isEmpty()) {
+                    finish()
+                } else if (settings.autoSaveEnabled) {
+                    saveThenShare(compressedMedia)
+                } else {
                     shareMedia(compressedMedia)
+                    finish()
                 }
-                finish()
             }
         }
+    }
+
+    /**
+     * Copies the compressed files to a persistent location (gallery or the folder picked in the
+     * settings) and opens the share sheet afterwards. The copy has to happen before sharing
+     * because the share uri points to the temporary cache, and it must not replace it.
+     */
+    private fun saveThenShare(compressedMedia: ArrayList<Uri>) {
+        Toast.makeText(this, getString(R.string.save_in_progress), Toast.LENGTH_SHORT).show()
+        Thread {
+            val result = MediaSaver.saveAll(applicationContext, compressedMedia, settings.autoSaveTreeUri)
+            runOnUiThread {
+                if (isFinishing || isDestroyed) return@runOnUiThread
+                if (result.needsStoragePermission) {
+                    pendingSaveUris = compressedMedia
+                    utils.requestWritePermissions(this)
+                    return@runOnUiThread
+                }
+                val message = when {
+                    result.isSuccess -> getString(R.string.save_success_toast, result.savedCount, result.location)
+                    result.savedCount > 0 -> getString(R.string.save_partial_toast, result.savedCount, result.failedCount)
+                    else -> getString(R.string.save_failed_toast)
+                }
+                Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+                shareMedia(compressedMedia)
+                finish()
+            }
+        }.start()
     }
 
     private fun shareMedia(mediaUris: ArrayList<Uri>) {

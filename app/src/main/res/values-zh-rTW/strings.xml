@@ -95,6 +95,7 @@
     <string name="settings_max_image_resolution_summary" tools:ignore="MissingTranslation">降低圖片輸出解析度</string>
 
     <string name="settings_video_codec" tools:ignore="MissingTranslation">影片編解碼器</string>
+    <string name="settings_audio_codec" tools:ignore="MissingTranslation">音訊編解碼器</string>
 
     <string name="settings_custom_params_title" tools:ignore="MissingTranslation">自訂參數</string>
     <string name="settings_custom_params_summary" tools:ignore="MissingTranslation">若設定，將只使用這些參數</string>
@@ -109,4 +110,36 @@
 
     <string name="settings_compression_preset">FFmpeg 壓縮預設</string>
     <string name="settings_compression_preset_summary">較慢的速度會有較高的輸出品質，較快的速度會有較低的輸出品質</string>
+
+    <!-- 儲存 -->
+    <string name="settings_saving_options_title">儲存</string>
+    <string name="settings_auto_save">壓縮完成後自動儲存</string>
+    <string name="settings_auto_save_summary">在開啟分享面板前，先將壓縮檔另存到固定位置</string>
+    <string name="settings_auto_save_location">儲存位置</string>
+    <string name="settings_auto_save_location_default">系統相簿（Movies/FFShare、Pictures/FFShare、Music/FFShare）</string>
+    <string name="settings_auto_save_location_selected">自訂資料夾：%1$s</string>
+    <string name="settings_auto_save_reset">恢復為系統相簿</string>
+    <string name="settings_auto_save_reset_summary">忘記上方選擇的資料夾</string>
+
+    <!-- 儲存空間 -->
+    <string name="settings_storage_options_title">儲存空間</string>
+    <string name="settings_clear_cache">立即清理快取</string>
+    <string name="settings_clear_cache_summary">壓縮產生的暫存檔，可安心刪除</string>
+    <string name="settings_cache_size">暫存檔佔用：%1$s</string>
+    <string name="settings_cache_empty">沒有暫存檔</string>
+
+    <!-- 儲存與快取提示 -->
+    <string name="save_in_progress">正在儲存…</string>
+    <string name="save_success_toast">已儲存 %1$d 個檔案到 %2$s</string>
+    <string name="save_partial_toast">已儲存 %1$d 個，%2$d 個失敗</string>
+    <string name="save_failed_toast">儲存失敗，檔案會在快取中保留一小時</string>
+    <string name="save_permission_needed">此 Android 版本需要儲存權限才能儲存檔案</string>
+    <string name="save_location_picked">儲存位置：%1$s</string>
+    <string name="save_location_reset">已恢復為系統相簿</string>
+    <string name="save_location_unavailable">該資料夾已無法寫入，請重新選擇</string>
+    <string name="clear_cache_dialog_title">清理快取？</string>
+    <string name="clear_cache_dialog_message">將刪除 %1$d 個暫存檔（%2$s）。已儲存或已分享的檔案不受影響。</string>
+    <string name="clear_cache_done">快取已清理，釋放 %1$s</string>
+    <string name="clear_cache_empty">快取已經是空的</string>
+    <string name="clear_cache_confirm">清理</string>
 </resources>

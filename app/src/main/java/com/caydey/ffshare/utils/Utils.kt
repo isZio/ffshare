@@ -11,6 +11,7 @@ import android.content.pm.PackageManager
 import android.graphics.BitmapFactory
 import android.media.MediaMetadataRetriever
 import android.net.Uri
+import android.os.Build
 import android.provider.OpenableColumns
 import androidx.core.content.ContextCompat
 import com.caydey.ffshare.BuildConfig
@@ -21,6 +22,7 @@ import kotlin.math.pow
 
 
 const val MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE = 1000
+const val MY_PERMISSIONS_REQUEST_WRITE_EXTERNAL_STORAGE = 1001
 class Utils(private val context: Context) {
     private val settings: Settings by lazy { Settings(context) }
 
@@ -89,6 +91,17 @@ class Utils(private val context: Context) {
         }
     fun requestReadPermissions(activity: Activity) {
         ActivityCompat.requestPermissions(activity, arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE), MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE)
+    }
+
+    // only needed on API < 29 to write into the public media directory
+    val isWritePermissionGranted: Boolean
+        get() {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) return true
+            val check = ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+            return (check == PackageManager.PERMISSION_GRANTED)
+        }
+    fun requestWritePermissions(activity: Activity) {
+        ActivityCompat.requestPermissions(activity, arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), MY_PERMISSIONS_REQUEST_WRITE_EXTERNAL_STORAGE)
     }
 
 

@@ -152,6 +152,40 @@
     </PreferenceCategory>
 
     <PreferenceCategory
+        android:key="prefs_saving"
+        android:title="@string/settings_saving_options_title">
+
+        <SwitchPreference
+            android:key="pref_auto_save"
+            android:defaultValue="true"
+            android:title="@string/settings_auto_save"
+            android:summary="@string/settings_auto_save_summary" />
+
+        <Preference
+            android:key="pref_auto_save_location"
+            android:persistent="false"
+            android:title="@string/settings_auto_save_location"
+            android:summary="@string/settings_auto_save_location_default" />
+
+        <Preference
+            android:key="pref_auto_save_reset"
+            android:persistent="false"
+            android:title="@string/settings_auto_save_reset"
+            android:summary="@string/settings_auto_save_reset_summary" />
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:key="prefs_storage"
+        android:title="@string/settings_storage_options_title">
+
+        <Preference
+            android:key="pref_cache_cleanup"
+            android:persistent="false"
+            android:title="@string/settings_clear_cache"
+            android:summary="@string/settings_clear_cache_summary" />
+    </PreferenceCategory>
+
+    <PreferenceCategory
         android:key="prefs_interface"
         android:title="@string/settings_interface_options_title">
         <SwitchPreference

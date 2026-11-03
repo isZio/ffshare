@@ -70,21 +70,26 @@ class Settings(private val context: Context) {
     var videoConversionOutput: Utils.MediaType // UNKNOWN for original
         get() {
             val preferencesString = preferences.getString(CONVERT_VIDEO_OUTPUT, Utils.MediaType.UNKNOWN.name)!!
-            return Utils.MediaType.valueOf(preferencesString) // convert string to enum
+            return parseMediaType(preferencesString)
         }
-        set(value) = setPreference(COMPRESSED_MEDIA_NAME, value.toString())
+        set(value) = setPreference(CONVERT_VIDEO_OUTPUT, value.toString())
     var imageConversionOutput: Utils.MediaType // UNKNOWN for original
         get() {
             val preferencesString = preferences.getString(CONVERT_IMAGE_OUTPUT, Utils.MediaType.UNKNOWN.name)!!
-            return Utils.MediaType.valueOf(preferencesString) // convert string to enum
+            return parseMediaType(preferencesString)
         }
         set(value) = setPreference(CONVERT_IMAGE_OUTPUT, value.toString())
     var audioConversionOutput: Utils.MediaType // UNKNOWN for original
         get() {
             val preferencesString = preferences.getString(CONVERT_AUDIO_OUTPUT, Utils.MediaType.UNKNOWN.name)!!
-            return Utils.MediaType.valueOf(preferencesString) // convert string to enum
+            return parseMediaType(preferencesString)
         }
         set(value) = setPreference(CONVERT_AUDIO_OUTPUT, value.toString())
+
+    // stored values can be stale (e.g. the old "ACC" typo), never crash on them
+    private fun parseMediaType(value: String): Utils.MediaType =
+        runCatching { Utils.MediaType.valueOf(value) }.getOrDefault(Utils.MediaType.UNKNOWN)
+
 
     var treatGifsAsVideos: Boolean
         get() = preferences.getBoolean(TREAT_GIFS_AS_VIDEOS, false)
@@ -93,6 +98,16 @@ class Settings(private val context: Context) {
     var showStatusMessages: Boolean
         get() = preferences.getBoolean(SHOW_STATUS_MESSAGES, true)
         set(value) = setPreference(SHOW_STATUS_MESSAGES, value)
+
+    // save the compressed files to a persistent location before sharing them
+    var autoSaveEnabled: Boolean
+        get() = preferences.getBoolean(AUTO_SAVE, true)
+        set(value) = setPreference(AUTO_SAVE, value)
+
+    // persisted SAF tree uri, empty means "system gallery"
+    var autoSaveTreeUri: String
+        get() = preferences.getString(AUTO_SAVE_TREE_URI, "")!!
+        set(value) = setPreference(AUTO_SAVE_TREE_URI, value)
 
     var videoCrf: Int
         get() = preferences.getString(VIDEO_CRF, "23")!!.toInt()
@@ -175,6 +190,8 @@ class Settings(private val context: Context) {
         const val CONVERT_AUDIO_OUTPUT = "pref_convert_audio_output"
         const val TREAT_GIFS_AS_VIDEOS = "pref_treat_gifs_as_videos"
         const val SHOW_STATUS_MESSAGES = "pref_show_status_messages"
+        const val AUTO_SAVE = "pref_auto_save"
+        const val AUTO_SAVE_TREE_URI = "pref_auto_save_tree_uri"
         const val VIDEO_CRF = "pref_video_crf"
         const val JPEG_QSCALE = "pref_jpeg_qscale"
         const val VIDEO_MAX_FILE_SIZE = "pref_video_max_file_size"
