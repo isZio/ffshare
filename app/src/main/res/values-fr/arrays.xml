@@ -117,14 +117,18 @@
         <item>Ne pas spécifier (laisser ffmpeg décider)</item>
         <item>H.264</item>
         <item>H.265/HEVC</item>
+        <item>H.264 (matériel, plus rapide)</item>
+        <item>H.265 (matériel, plus rapide)</item>
         <item>VP9</item>
         <item>MPEG-4</item>
     </string-array>
     <string-array name="settings_video_codec_values">
-        <item>COPIE</item>
-        <item>DÉFAUT</item>
+        <item>COPY</item>
+        <item>DEFAULT</item>
         <item>H264</item>
         <item>H265</item>
+        <item>H264_HW</item>
+        <item>H265_HW</item>
         <item>VP9</item>
         <item>MPEG4</item>
     </string-array>
@@ -137,8 +141,8 @@
         <item>Opus</item>
     </string-array>
     <string-array name="settings_audio_codec_values">
-        <item>COPIE</item>
-        <item>DÉFAUT</item>
+        <item>COPY</item>
+        <item>DEFAULT</item>
         <item>AAC</item>
         <item>AC3</item>
         <item>OPUS</item>

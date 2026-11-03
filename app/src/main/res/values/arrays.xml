@@ -117,6 +117,8 @@
         <item>Do not specify (let ffmpeg decide)</item>
         <item>H.264</item>
         <item>H.265/HEVC</item>
+        <item>H.264 (hardware, faster)</item>
+        <item>H.265 (hardware, faster)</item>
         <item>VP9</item>
         <item>MPEG-4</item>
     </string-array>
@@ -125,6 +127,8 @@
         <item>DEFAULT</item>
         <item>H264</item>
         <item>H265</item>
+        <item>H264_HW</item>
+        <item>H265_HW</item>
         <item>VP9</item>
         <item>MPEG4</item>
     </string-array>

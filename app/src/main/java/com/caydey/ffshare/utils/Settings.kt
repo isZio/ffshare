@@ -12,11 +12,13 @@ class Settings(private val context: Context) {
         CUSTOM
     }
 
-    enum class VideoCodecOpts(val raw: String) {
+    enum class VideoCodecOpts(val raw: String, val isHardware: Boolean = false) {
         COPY("copy"),
         DEFAULT(""),
         H264("libx264"),
         H265("libx265"),
+        H264_HW("h264_mediacodec", true),
+        H265_HW("hevc_mediacodec", true),
         VP9("libvpx-vp9"),
         MPEG4("mpeg4");
         companion object {
@@ -24,6 +26,8 @@ class Settings(private val context: Context) {
                 return when (codec) {
                     "h264" -> H264
                     "hevc" -> H265
+                    "h264_mediacodec" -> H264_HW
+                    "hevc_mediacodec" -> H265_HW
                     "vp9" -> VP9
                     "mpeg4" -> MPEG4
                     else -> DEFAULT
@@ -148,14 +152,17 @@ class Settings(private val context: Context) {
     var videoCodec: VideoCodecOpts
         get() {
             val videoCodecString = preferences.getString(VIDEO_CODEC, VideoCodecOpts.H264.name)!!
-            return VideoCodecOpts.valueOf(videoCodecString) // convert string to enum
+            // stored values can be stale or come from an older translation, never crash on them
+            return runCatching { VideoCodecOpts.valueOf(videoCodecString) }
+                .getOrDefault(VideoCodecOpts.DEFAULT)
         }
         set(value) = setPreference(VIDEO_CODEC, value.toString())
 
     var audioCodec: AudioCodecOpts
         get() {
             val audioCodecString = preferences.getString(AUDIO_CODEC, AudioCodecOpts.COPY.name)!!
-            return AudioCodecOpts.valueOf(audioCodecString) // convert string to enum
+            return runCatching { AudioCodecOpts.valueOf(audioCodecString) }
+                .getOrDefault(AudioCodecOpts.DEFAULT)
         }
         set(value) = setPreference(AUDIO_CODEC, value.toString())
 

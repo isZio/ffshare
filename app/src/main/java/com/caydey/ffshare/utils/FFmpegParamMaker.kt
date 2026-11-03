@@ -16,10 +16,19 @@ class FFmpegParamMaker(val settings: Settings, val utils: Utils) {
         val params = StringJoiner(" ")
         val videoFormatParams = StringJoiner(",")
 
+        // resolve the encoder once, a rejected hardware attempt is retried with the software one
+        val requestedCodec = settings.videoCodec
+        val videoCodec = if (requestedCodec.isHardware && forceSoftwareCodec) {
+            Settings.VideoCodecOpts.H264
+        } else {
+            requestedCodec
+        }
+        val hardwareEncoder = videoCodec.isHardware
+
 //        val (inputVideoCodec, inputAudioCodec) = getMediaCodecs(mediaInformation)
 
-        // preset, webp does not support this
-        if (outputMediaType != Utils.MediaType.WEBP) {
+        // preset, webp does not support this and hardware encoders have no x264 preset
+        if (outputMediaType != Utils.MediaType.WEBP && !hardwareEncoder) {
             params.add("-preset ${settings.compressionPreset}")
         }
 
@@ -42,7 +51,13 @@ class FFmpegParamMaker(val settings: Settings, val utils: Utils) {
                 videoScaleApplied = true
                 var pixelRounding = "-1"
                 // H.26x videos require dimensions to be divisible by 2
-                if (utils.isVideo(outputMediaType) && settings.videoCodec in setOf(Settings.VideoCodecOpts.H264, Settings.VideoCodecOpts.H265)) {
+                if (utils.isVideo(outputMediaType) && videoCodec in setOf(
+                        Settings.VideoCodecOpts.H264,
+                        Settings.VideoCodecOpts.H265,
+                        Settings.VideoCodecOpts.H264_HW,
+                        Settings.VideoCodecOpts.H265_HW
+                    )
+                ) {
                     pixelRounding = "-2"
                 }
                 if (isPortrait) {
@@ -55,23 +70,28 @@ class FFmpegParamMaker(val settings: Settings, val utils: Utils) {
 
         // video
         if (utils.isVideo(outputMediaType)) { // check outputMediaType not mediaType because conversions
-            // crf
-            params.add("-crf ${settings.videoCrf}")
-
-            // pixel format
-            videoFormatParams.add("format=yuv420p")
+            // pixel format: MediaCodec encoders take nv12, ffmpeg's software encoders take yuv420p
+            videoFormatParams.add(if (hardwareEncoder) "format=nv12" else "format=yuv420p")
 
             // video codec
-            if (settings.videoCodec == Settings.VideoCodecOpts.DEFAULT &&
-                outputMediaType != Utils.MediaType.WEBM
-            ) {
+            when {
+                hardwareEncoder -> params.add("-c:v ${videoCodec.raw}")
+                videoCodec != Settings.VideoCodecOpts.DEFAULT -> params.add("-c:v ${videoCodec.raw}")
                 // ffmpeg-kit builds also register h264_mediacodec as "h264", and ffmpeg picks it
                 // before libx264 when no encoder is requested. The hardware encoder refuses the
-                // yuv420p input we enforce below on many devices (CodecException 0xffffffc3),
+                // yuv420p input we enforce above on many devices (CodecException 0xffffffc3),
                 // so pin the software encoder unless the output is webm/vp9.
-                params.add("-c:v ${Settings.VideoCodecOpts.H264.raw}")
-            } else if (settings.videoCodec != Settings.VideoCodecOpts.DEFAULT) {
-                params.add("-c:v ${settings.videoCodec.raw}")
+                outputMediaType != Utils.MediaType.WEBM -> params.add("-c:v ${Settings.VideoCodecOpts.H264.raw}")
+            }
+
+            if (hardwareEncoder) {
+                // MediaCodec has no CRF: without an explicit bitrate it encodes at its own
+                // default and files can grow. -g also overrides the default i-frame-interval of 1.
+                params.add("-b:v ${hardwareBitrateKbps(mediaInformation, mediaType, inputFile)}k")
+                params.add("-g $HARDWARE_GOP")
+            } else {
+                // crf
+                params.add("-crf ${settings.videoCrf}")
             }
 
             // H.26x requires dimensions to be divisible by 2, video scaling will account for this if applied
@@ -88,7 +108,8 @@ class FFmpegParamMaker(val settings: Settings, val utils: Utils) {
             }
 
             //  max file size (limit the bitrate to achieve this)
-            if (settings.videoMaxFileSize != 0) {
+            //  hardware encoders already got a -b:v above and do not accept -maxrate reliably
+            if (settings.videoMaxFileSize != 0 && !hardwareEncoder) {
                 // ffmpeg does not like -maxrate & -bufsize params when the output file is webm
                 if (outputMediaType != Utils.MediaType.WEBM) {
                     // Calculate maximum bitrate in kbps.
@@ -126,6 +147,45 @@ class FFmpegParamMaker(val settings: Settings, val utils: Utils) {
         }
 
         return params.toString()
+    }
+
+    /**
+     * MediaCodec has no constant quality mode, so hardware encoding needs an explicit bitrate.
+     * Prefers the "video max file size" setting when it is set, otherwise picks a bitrate that
+     * matches the output height.
+     */
+    private fun hardwareBitrateKbps(mediaInformation: MediaInformation, mediaType: Utils.MediaType, inputFile: Uri): Int {
+        val duration = mediaInformation.getDuration()?.toFloat() ?: 0f
+        val maxFileSize = settings.videoMaxFileSize // KiB
+        if (maxFileSize != 0 && duration > 0f) {
+            val totalKbps = (maxFileSize * 8 / ceil(duration)).toInt()
+            return (totalKbps - HW_AUDIO_KBPS).coerceAtLeast(MIN_HW_VIDEO_KBPS)
+        }
+        val (_, sourceHeight) = utils.getMediaResolution(inputFile, mediaType)
+        val maxResolution = settings.maxVideoResolution
+        val height = if (maxResolution == 0) sourceHeight else minOf(sourceHeight, maxResolution)
+        return when {
+            height >= 2160 -> 20000
+            height >= 1440 -> 12000
+            height >= 1080 -> 6000
+            height >= 720 -> 3000
+            height >= 480 -> 1500
+            else -> 800
+        }
+    }
+
+    companion object {
+        // MediaCodec defaults to an i-frame interval of 1 frame, which bloats the output
+        private const val HARDWARE_GOP = 48
+        private const val HW_AUDIO_KBPS = 128
+        private const val MIN_HW_VIDEO_KBPS = 400
+
+        /**
+         * Set to true when a hardware encode failed on this device, the next attempt then falls
+         * back to the software encoder.
+         */
+        @Volatile
+        var forceSoftwareCodec = false
     }
 
     private fun getMediaCodecs(mediaInformation: MediaInformation): Pair<Settings.VideoCodecOpts?, Settings.AudioCodecOpts?> {
