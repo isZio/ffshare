@@ -104,22 +104,25 @@ class HandleMediaActivity : AppCompatActivity() {
         } else {
             // callback
             mediaCompressor.compressFiles(this, receivedMedia) { compressedMedia, errorOutput ->
-                when {
-                    compressedMedia.isEmpty() && errorOutput != null -> {
-                        if (!retriedCompression) {
-                            retriedCompression = true
-                            Timber.d("Compression failed, retrying once")
-                            Toast.makeText(this, getString(R.string.retrying_compression), Toast.LENGTH_SHORT).show()
-                            onMediaReceive()
-                        } else {
-                            showCompressionError(errorOutput)
+                // ffmpeg invokes this callback on its own worker thread, every UI call must be posted
+                runOnUiThread {
+                    when {
+                        compressedMedia.isEmpty() && errorOutput != null -> {
+                            if (!retriedCompression) {
+                                retriedCompression = true
+                                Timber.d("Compression failed, retrying once")
+                                Toast.makeText(this, getString(R.string.retrying_compression), Toast.LENGTH_SHORT).show()
+                                onMediaReceive()
+                            } else {
+                                showCompressionError(errorOutput)
+                            }
                         }
-                    }
-                    compressedMedia.isEmpty() -> finish()
-                    settings.autoSaveEnabled -> saveThenShare(compressedMedia)
-                    else -> {
-                        shareMedia(compressedMedia)
-                        finish()
+                        compressedMedia.isEmpty() -> finish()
+                        settings.autoSaveEnabled -> saveThenShare(compressedMedia)
+                        else -> {
+                            shareMedia(compressedMedia)
+                            finish()
+                        }
                     }
                 }
             }
