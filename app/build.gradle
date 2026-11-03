@@ -18,44 +18,42 @@ android {
     signingConfigs {
         release {
             // environment variables from ~/.gradle/gradle.properties
-            storeFile file(FFSHARE_RELEASE_STORE_FILE)
-            storePassword FFSHARE_RELEASE_STORE_PASSWORD
-            keyAlias FFSHARE_RELEASE_KEY_ALIAS
-            keyPassword FFSHARE_RELEASE_KEY_PASSWORD
+            if (project.hasProperty('FFSHARE_RELEASE_STORE_FILE')) {
+                storeFile file(FFSHARE_RELEASE_STORE_FILE)
+                storePassword FFSHARE_RELEASE_STORE_PASSWORD
+                keyAlias FFSHARE_RELEASE_KEY_ALIAS
+                keyPassword FFSHARE_RELEASE_KEY_PASSWORD
+            }
         }
     }
     
     splits {
         // Configures multiple APKs based on ABI.
         abi {
-          // Enables building multiple APKs per ABI.
+          // only ship 64 bit arm builds
           enable true
 
           // Resets the list of ABIs for Gradle to create APKs for to none.
           reset()
 
           //noinspection ChromeOsAbiSupport
-          include "armeabi-v7a", "arm64-v8a"
+          include "arm64-v8a"
 
-          // Create apk with merged ABI libraries
-          universalApk true
+          // explicitly no universal apk, one arm64 apk only
+          universalApk false
         }
     }
 
     buildTypes {
         release {
-            ndk {
-                //noinspection ChromeOsAbiSupport
-                abiFilters "armeabi-v7a", "arm64-v8a"
-            }
+            // ABI filtering is handled by the splits block above
             minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            signingConfig signingConfigs.release
+            if (project.hasProperty('FFSHARE_RELEASE_STORE_FILE')) {
+                signingConfig signingConfigs.release
+            }
         }
         debug {
-            ndk {
-                abiFilters "armeabi-v7a", "arm64-v8a", "x86", "x86_64"
-            }
             minifyEnabled false
         }
 
@@ -85,8 +83,12 @@ dependencies {
     implementation 'androidx.multidex:multidex:2.0.1'
     implementation 'androidx.exifinterface:exifinterface:1.3.3'
     implementation 'androidx.preference:preference-ktx:1.2.0'
+    implementation 'androidx.documentfile:documentfile:1.0.1'
 
-    implementation(files('libs/ffmpeg-kit-next-8.1.1.aar'))
+    // upsteam used a locally built ffmpeg-kit-next aar (app/libs is gitignored).
+    // ffmpeg-kit was retired in Jan 2025, so this is the maintained drop-in fork:
+    // same package (com.arthenica.ffmpegkit), same API, GPL variant needed for x264/x265.
+    implementation 'dev.ffmpegkit-maintained:ffmpeg-kit-full-gpl:8.1.9'
     implementation 'com.arthenica:smart-exception-java:0.2.1'
 
     implementation 'com.jakewharton.timber:timber:5.0.1'
