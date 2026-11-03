@@ -15,6 +15,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.caydey.ffshare.extensions.parcelable
 import com.caydey.ffshare.extensions.parcelableArrayList
+import com.caydey.ffshare.utils.FFmpegParamMaker
 import com.caydey.ffshare.utils.MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE
 import com.caydey.ffshare.utils.MY_PERMISSIONS_REQUEST_WRITE_EXTERNAL_STORAGE
 import com.caydey.ffshare.utils.MediaCompressor
@@ -31,8 +32,8 @@ class HandleMediaActivity : AppCompatActivity() {
     private val utils: Utils by lazy { Utils(applicationContext) }
     private val settings: Settings by lazy { Settings(applicationContext) }
 
-    // files waiting for the storage permission before they can be copied to the gallery
-    private var pendingSaveUris: ArrayList<Uri>? = null
+    // outcome waiting for the storage permission before it can be copied to the gallery
+    private var pendingOutcome: MediaCompressor.CompressionOutcome? = null
 
     // upstream has a known flaky first run, one automatic retry usually goes through
     private var retriedCompression = false
@@ -42,6 +43,9 @@ class HandleMediaActivity : AppCompatActivity() {
         setContentView(R.layout.activity_handle_media)
 
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+
+        // a new share starts with the encoder the user picked
+        FFmpegParamMaker.forceSoftwareCodec = false
 
         if (utils.isReadPermissionGranted) {
             onMediaReceive()
@@ -72,17 +76,16 @@ class HandleMediaActivity : AppCompatActivity() {
         }
         // API < 29 needs the write permission to copy the output into the gallery
         if (requestCode == MY_PERMISSIONS_REQUEST_WRITE_EXTERNAL_STORAGE) {
-            val uris = pendingSaveUris
-            pendingSaveUris = null
-            if (uris == null) return
+            val outcome = pendingOutcome
+            pendingOutcome = null
+            if (outcome == null) return
             if (utils.isWritePermissionGranted) {
                 Timber.d("Write permission granted, saving again")
-                saveThenShare(uris)
+                saveThenShowResult(outcome)
             } else {
                 Timber.d("Write permission denied, skipping the automatic save")
                 Toast.makeText(this, getString(R.string.save_permission_needed), Toast.LENGTH_LONG).show()
-                shareMedia(uris)
-                finish()
+                showResult(outcome, null)
             }
         }
     }
@@ -103,26 +106,26 @@ class HandleMediaActivity : AppCompatActivity() {
             finish()
         } else {
             // callback
-            mediaCompressor.compressFiles(this, receivedMedia) { compressedMedia, errorOutput ->
+            mediaCompressor.compressFiles(this, receivedMedia) { outcome ->
                 // ffmpeg invokes this callback on its own worker thread, every UI call must be posted
                 runOnUiThread {
+                    val compressedMedia = outcome.uris
                     when {
-                        compressedMedia.isEmpty() && errorOutput != null -> {
+                        compressedMedia.isEmpty() && outcome.errorOutput != null -> {
                             if (!retriedCompression) {
                                 retriedCompression = true
+                                // a hardware encoder that rejects the input gets one software retry
+                                FFmpegParamMaker.forceSoftwareCodec = true
                                 Timber.d("Compression failed, retrying once")
                                 Toast.makeText(this, getString(R.string.retrying_compression), Toast.LENGTH_SHORT).show()
                                 onMediaReceive()
                             } else {
-                                showCompressionError(errorOutput)
+                                showCompressionError(outcome.errorOutput)
                             }
                         }
                         compressedMedia.isEmpty() -> finish()
-                        settings.autoSaveEnabled -> saveThenShare(compressedMedia)
-                        else -> {
-                            shareMedia(compressedMedia)
-                            finish()
-                        }
+                        settings.autoSaveEnabled -> saveThenShowResult(outcome)
+                        else -> showResult(outcome, null)
                     }
                 }
             }
@@ -152,30 +155,68 @@ class HandleMediaActivity : AppCompatActivity() {
 
     /**
      * Copies the compressed files to a persistent location (gallery or the folder picked in the
-     * settings) and opens the share sheet afterwards. The copy has to happen before sharing
-     * because the share uri points to the temporary cache, and it must not replace it.
+     * settings) and then shows the result summary. The copy must not replace the cache uri,
+     * because that uri is still used when the user decides to share afterwards.
      */
-    private fun saveThenShare(compressedMedia: ArrayList<Uri>) {
+    private fun saveThenShowResult(outcome: MediaCompressor.CompressionOutcome) {
         Toast.makeText(this, getString(R.string.save_in_progress), Toast.LENGTH_SHORT).show()
         Thread {
-            val result = MediaSaver.saveAll(applicationContext, compressedMedia, settings.autoSaveTreeUri)
+            val result = MediaSaver.saveAll(applicationContext, outcome.uris, settings.autoSaveTreeUri)
             runOnUiThread {
                 if (isFinishing || isDestroyed) return@runOnUiThread
                 if (result.needsStoragePermission) {
-                    pendingSaveUris = compressedMedia
+                    pendingOutcome = outcome
                     utils.requestWritePermissions(this)
                     return@runOnUiThread
                 }
-                val message = when {
-                    result.isSuccess -> getString(R.string.save_success_toast, result.savedCount, result.location)
-                    result.savedCount > 0 -> getString(R.string.save_partial_toast, result.savedCount, result.failedCount)
-                    else -> getString(R.string.save_failed_toast)
+                val location = when {
+                    result.isSuccess -> result.location
+                    result.savedCount > 0 -> result.location
+                    else -> null
                 }
-                Toast.makeText(this, message, Toast.LENGTH_LONG).show()
-                shareMedia(compressedMedia)
-                finish()
+                if (result.isCompleteFailure) {
+                    Toast.makeText(this, getString(R.string.save_failed_toast), Toast.LENGTH_LONG).show()
+                }
+                showResult(outcome, location)
             }
         }.start()
+    }
+
+    /** Result summary: size before/after, ratio and elapsed time. Sharing is opt-in. */
+    private fun showResult(outcome: MediaCompressor.CompressionOutcome, savedLocation: String?) {
+        val inputHuman = utils.bytesToHuman(outcome.inputBytes)
+        val outputHuman = utils.bytesToHuman(outcome.outputBytes)
+        val ratio = if (outcome.inputBytes > 0) {
+            (1.0 - outcome.outputBytes.toDouble() / outcome.inputBytes) * 100
+        } else {
+            0.0
+        }
+        val lines = mutableListOf<String>()
+        lines.add(
+            if (ratio >= 0) {
+                getString(R.string.result_size_line, inputHuman, outputHuman, ratio)
+            } else {
+                getString(R.string.result_size_grew_line, inputHuman, outputHuman, -ratio)
+            }
+        )
+        lines.add(getString(R.string.result_elapsed_line, utils.millisToMicrowaveTime(outcome.elapsedMillis.toInt())))
+        if (outcome.uris.size > 1) {
+            lines.add(getString(R.string.result_files_line, outcome.uris.size))
+        }
+        if (!savedLocation.isNullOrBlank()) {
+            lines.add(getString(R.string.result_saved_line, savedLocation))
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle(R.string.result_dialog_title)
+            .setMessage(lines.joinToString("\n"))
+            .setPositiveButton(R.string.result_share) { _, _ ->
+                shareMedia(outcome.uris)
+                finish()
+            }
+            .setNegativeButton(R.string.result_done) { _, _ -> finish() }
+            .setCancelable(false)
+            .show()
     }
 
     private fun shareMedia(mediaUris: ArrayList<Uri>) {

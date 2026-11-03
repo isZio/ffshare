@@ -145,4 +145,12 @@
     <string name="error_dialog_retry">重試</string>
     <string name="error_dialog_copy">複製輸出</string>
     <string name="retrying_compression">壓縮失敗，正在重試…</string>
+    <string name="result_dialog_title">壓縮完成</string>
+    <string name="result_size_line">%1$s → %2$s（減少 %3$.1f%%）</string>
+    <string name="result_size_grew_line">%1$s → %2$s（增加 %3$.1f%%）</string>
+    <string name="result_elapsed_line">耗時 %1$s</string>
+    <string name="result_files_line">共 %1$d 個檔案</string>
+    <string name="result_saved_line">已儲存到 %1$s</string>
+    <string name="result_share">分享</string>
+    <string name="result_done">完成</string>
 </resources>

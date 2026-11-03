@@ -143,4 +143,12 @@
     <string name="error_dialog_retry">Retry</string>
     <string name="error_dialog_copy">Copy output</string>
     <string name="retrying_compression">Compression failed, retrying…</string>
+    <string name="result_dialog_title">Compression finished</string>
+    <string name="result_size_line">%1$s → %2$s (%3$.1f%% smaller)</string>
+    <string name="result_size_grew_line">%1$s → %2$s (%3$.1f%% larger)</string>
+    <string name="result_elapsed_line">Time: %1$s</string>
+    <string name="result_files_line">%1$d files</string>
+    <string name="result_saved_line">Saved to %1$s</string>
+    <string name="result_share">Share</string>
+    <string name="result_done">Done</string>
 </resources>

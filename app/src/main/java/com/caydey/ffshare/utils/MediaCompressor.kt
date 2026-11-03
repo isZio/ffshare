@@ -7,6 +7,7 @@ import android.content.Context
 import android.net.Uri
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import android.view.View
 import android.widget.Button
 import android.widget.TableRow
@@ -24,6 +25,16 @@ import java.util.*
 
 
 class MediaCompressor(private val context: Context) {
+
+    /** Everything the caller needs to report a finished compression. */
+    data class CompressionOutcome(
+        val uris: ArrayList<Uri>,
+        val errorOutput: String?,
+        val inputBytes: Long,
+        val outputBytes: Long,
+        val elapsedMillis: Long
+    )
+
     private val utils: Utils by lazy { Utils(context) }
     private val settings: Settings by lazy { Settings(context) }
     private val logsDbHelper by lazy { LogsDbHelper(context) }
@@ -189,7 +200,7 @@ class MediaCompressor(private val context: Context) {
         })
     }
 
-    fun compressFiles(activity: Activity, inputFilesUri: ArrayList<Uri>, callback: (uris: ArrayList<Uri>, errorOutput: String?) -> Unit) {
+    fun compressFiles(activity: Activity, inputFilesUri: ArrayList<Uri>, callback: (outcome: CompressionOutcome) -> Unit) {
         val txtCommandNumber: TextView = activity.findViewById(R.id.txtCommandNumber)
 
         val inputFilesCount = inputFilesUri.size
@@ -198,6 +209,8 @@ class MediaCompressor(private val context: Context) {
 
         var totalInputFileSize = 0L
         var totalOutputFileSize = 0L
+
+        val startTime = SystemClock.elapsedRealtime()
 
         // last ffmpeg error output, null when every file succeeded
         var lastErrorOutput: String? = null
@@ -228,17 +241,20 @@ class MediaCompressor(private val context: Context) {
                 })
             }
             if (i >= inputFilesCount || error) { // end of iterations
-                // show compression percentage as toast message if there was no error
-                if (settings.showStatusMessages && !error) {
-                    val totalOutputFileSizeHuman = utils.bytesToHuman(totalOutputFileSize)
-                    val compressionPercentage = (1 - (totalOutputFileSize.toDouble() / totalInputFileSize)) * 100
-                    val toastMessage = context.getString(R.string.media_reduction_message, totalOutputFileSizeHuman, compressionPercentage)
-                    Handler(Looper.getMainLooper()).post {
-                        Timber.d("Showing compression size toast message")
-                        Toast.makeText(context, toastMessage, Toast.LENGTH_LONG).show()
-                    }
-                }
-                callback(compressedFiles, lastErrorOutput)
+                val elapsedMillis = SystemClock.elapsedRealtime() - startTime
+                Timber.d(
+                    "Compression finished in %d ms, %d -> %d bytes",
+                    elapsedMillis, totalInputFileSize, totalOutputFileSize
+                )
+                callback(
+                    CompressionOutcome(
+                        uris = compressedFiles,
+                        errorOutput = lastErrorOutput,
+                        inputBytes = totalInputFileSize,
+                        outputBytes = totalOutputFileSize,
+                        elapsedMillis = elapsedMillis
+                    )
+                )
             }
         }
         iteratorFunction(0, false) // start iterations
