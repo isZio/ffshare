@@ -142,4 +142,7 @@
     <string name="clear_cache_done">快取已清理，釋放 %1$s</string>
     <string name="clear_cache_empty">快取已經是空的</string>
     <string name="clear_cache_confirm">清理</string>
+    <string name="error_dialog_retry">重試</string>
+    <string name="error_dialog_copy">複製輸出</string>
+    <string name="retrying_compression">壓縮失敗，正在重試…</string>
 </resources>

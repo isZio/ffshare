@@ -140,4 +140,7 @@
     <string name="clear_cache_done">Cache cleared, %1$s freed</string>
     <string name="clear_cache_empty">Cache is already empty</string>
     <string name="clear_cache_confirm">Clear</string>
+    <string name="error_dialog_retry">Retry</string>
+    <string name="error_dialog_copy">Copy output</string>
+    <string name="retrying_compression">Compression failed, retrying…</string>
 </resources>

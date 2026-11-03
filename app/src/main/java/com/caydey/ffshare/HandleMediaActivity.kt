@@ -2,6 +2,8 @@ package com.caydey.ffshare
 
 import android.app.AlarmManager
 import android.app.PendingIntent
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -9,6 +11,7 @@ import android.os.Bundle
 import android.os.SystemClock
 import android.view.WindowManager
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.caydey.ffshare.extensions.parcelable
 import com.caydey.ffshare.extensions.parcelableArrayList
@@ -30,6 +33,9 @@ class HandleMediaActivity : AppCompatActivity() {
 
     // files waiting for the storage permission before they can be copied to the gallery
     private var pendingSaveUris: ArrayList<Uri>? = null
+
+    // upstream has a known flaky first run, one automatic retry usually goes through
+    private var retriedCompression = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -97,17 +103,48 @@ class HandleMediaActivity : AppCompatActivity() {
             finish()
         } else {
             // callback
-            mediaCompressor.compressFiles(this, receivedMedia) { compressedMedia ->
-                if (compressedMedia.isEmpty()) {
-                    finish()
-                } else if (settings.autoSaveEnabled) {
-                    saveThenShare(compressedMedia)
-                } else {
-                    shareMedia(compressedMedia)
-                    finish()
+            mediaCompressor.compressFiles(this, receivedMedia) { compressedMedia, errorOutput ->
+                when {
+                    compressedMedia.isEmpty() && errorOutput != null -> {
+                        if (!retriedCompression) {
+                            retriedCompression = true
+                            Timber.d("Compression failed, retrying once")
+                            Toast.makeText(this, getString(R.string.retrying_compression), Toast.LENGTH_SHORT).show()
+                            onMediaReceive()
+                        } else {
+                            showCompressionError(errorOutput)
+                        }
+                    }
+                    compressedMedia.isEmpty() -> finish()
+                    settings.autoSaveEnabled -> saveThenShare(compressedMedia)
+                    else -> {
+                        shareMedia(compressedMedia)
+                        finish()
+                    }
                 }
             }
         }
+    }
+
+    /**
+     * Shows the tail of the ffmpeg output instead of a bare toast, so a failure can be reported
+     * (or understood) without pulling the whole log database.
+     */
+    private fun showCompressionError(output: String) {
+        val tail = output.trim().lines().takeLast(25).joinToString("\n").ifBlank { getString(R.string.ffmpeg_error) }
+        AlertDialog.Builder(this)
+            .setTitle(R.string.ffmpeg_error)
+            .setMessage(tail)
+            .setPositiveButton(R.string.error_dialog_retry) { _, _ -> onMediaReceive() }
+            .setNeutralButton(R.string.error_dialog_copy) { _, _ ->
+                val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                clipboard.setPrimaryClip(ClipData.newPlainText("ffmpeg", output))
+                Toast.makeText(this, getString(R.string.log_copied_toast), Toast.LENGTH_SHORT).show()
+                finish()
+            }
+            .setNegativeButton(R.string.close) { _, _ -> finish() }
+            .setCancelable(false)
+            .show()
     }
 
     /**

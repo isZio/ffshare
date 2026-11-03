@@ -40,7 +40,7 @@ class MediaCompressor(private val context: Context) {
         activity: Activity,
         inputFileUri: Uri,
         successHandler: (uri: Uri, inputFileSize: Long, outputFileSize: Long) -> Unit,
-        failureHandler: () -> Unit
+        failureHandler: (errorOutput: String?) -> Unit
     ) {
         val txtFfmpegCommand: TextView = activity.findViewById(R.id.txtFfmpegCommand)
         val txtInputFile: TextView = activity.findViewById(R.id.txtInputFile)
@@ -59,13 +59,13 @@ class MediaCompressor(private val context: Context) {
             // cancel all ffmpeg operations
             cancelAllOperations()
 
-            failureHandler() // a cancel is a fail
+            failureHandler(null) // a cancel is a fail
         }
 
         val mediaType = utils.getMediaType(inputFileUri)
         if (!utils.isSupportedMediaType(mediaType)) { // not supported show error
             Toast.makeText(context, context.getString(R.string.error_unknown_filetype), Toast.LENGTH_LONG).show()
-            failureHandler()
+            failureHandler(null)
             return
         }
 
@@ -89,7 +89,7 @@ class MediaCompressor(private val context: Context) {
         if (mediaInformation == null) {
             Timber.d("Unable to get media information, throwing error")
             Toast.makeText(context, context.getString(R.string.error_invalid_file), Toast.LENGTH_LONG).show()
-            failureHandler()
+            failureHandler(null)
             return
         }
 
@@ -101,7 +101,7 @@ class MediaCompressor(private val context: Context) {
             if (mediaInformation.getDuration() == null || mediaInformation.getSize() == null) {
                 Timber.d("Unable to get size & duration for media, throwing error")
                 Toast.makeText(context, context.getString(R.string.error_invalid_file), Toast.LENGTH_LONG).show()
-                failureHandler()
+                failureHandler(null)
                 return
             }
             duration = ((mediaInformation.getDuration()?.toFloat() ?: 0f) * 1_000).toInt()
@@ -145,7 +145,8 @@ class MediaCompressor(private val context: Context) {
                         inputFileSize,
                         -1
                     ))
-                    failureHandler()
+                    Timber.e("ffmpeg failed: %s", session.getOutput())
+                    failureHandler(session.getOutput())
                 }
             } else { // success
                 Timber.d("ffmpeg command executed successfully")
@@ -188,7 +189,7 @@ class MediaCompressor(private val context: Context) {
         })
     }
 
-    fun compressFiles(activity: Activity, inputFilesUri: ArrayList<Uri>, callback: (uris: ArrayList<Uri>) -> Unit) {
+    fun compressFiles(activity: Activity, inputFilesUri: ArrayList<Uri>, callback: (uris: ArrayList<Uri>, errorOutput: String?) -> Unit) {
         val txtCommandNumber: TextView = activity.findViewById(R.id.txtCommandNumber)
 
         val inputFilesCount = inputFilesUri.size
@@ -197,6 +198,9 @@ class MediaCompressor(private val context: Context) {
 
         var totalInputFileSize = 0L
         var totalOutputFileSize = 0L
+
+        // last ffmpeg error output, null when every file succeeded
+        var lastErrorOutput: String? = null
 
         // since we are working with callbacks a simple for loop wont work
         lateinit var iteratorFunction: (Int, Boolean) -> Unit
@@ -211,7 +215,9 @@ class MediaCompressor(private val context: Context) {
                     }
                 }
 
-                compressSingleFile(activity, inputFilesUri[i], failureHandler = {
+                compressSingleFile(activity, inputFilesUri[i], failureHandler = { errorOutput ->
+                    // keep the ffmpeg output so the caller can show what actually went wrong
+                    if (errorOutput != null) lastErrorOutput = errorOutput
                     // if 1 file fails don't add it to compressedFiles array
                     iteratorFunction(i+1, true) // call to self with error flag true
                 }, successHandler = { uri, inputFileSize, outputFileSize ->
@@ -232,7 +238,7 @@ class MediaCompressor(private val context: Context) {
                         Toast.makeText(context, toastMessage, Toast.LENGTH_LONG).show()
                     }
                 }
-                callback(compressedFiles)
+                callback(compressedFiles, lastErrorOutput)
             }
         }
         iteratorFunction(0, false) // start iterations
