@@ -93,6 +93,10 @@ class PreferencesFragment : PreferenceFragmentCompat() {
             toast(getString(R.string.save_location_reset))
             true
         }
+        findPreference<Preference>("pref_open_guide")?.setOnPreferenceClickListener {
+            startActivity(Intent(requireContext(), GuideActivity::class.java))
+            true
+        }
     }
 
     private fun updateSaveLocationSummary() {

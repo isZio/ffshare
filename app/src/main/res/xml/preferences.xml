@@ -186,13 +186,14 @@
     </PreferenceCategory>
 
     <PreferenceCategory
-        android:key="prefs_interface"
-        android:title="@string/settings_interface_options_title">
-        <SwitchPreference
-            android:key="pref_show_toast_messages"
-            android:defaultValue="true"
-            android:title="@string/settings_show_status_messages"
-            android:summary="@string/settings_show_status_messages_summary" />
+        android:key="prefs_help"
+        android:title="@string/settings_help_title">
+
+        <Preference
+            android:key="pref_open_guide"
+            android:persistent="false"
+            android:title="@string/settings_guide"
+            android:summary="@string/settings_guide_summary" />
     </PreferenceCategory>
 
 </PreferenceScreen>

@@ -153,4 +153,7 @@
     <string name="result_saved_line">已儲存到 %1$s</string>
     <string name="result_share">分享</string>
     <string name="result_done">完成</string>
+    <string name="settings_help_title">說明</string>
+    <string name="settings_guide">參數說明與情境推薦</string>
+    <string name="settings_guide_summary">每項參數的含義、什麼時候該改、推薦值與現成配方</string>
 </resources>

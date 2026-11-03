@@ -44,6 +44,15 @@
                 android:value="com.caydey.ffshare.MainActivity" />
         </activity>
         <activity
+            android:name=".GuideActivity"
+            android:exported="false"
+            android:label="@string/settings_guide"
+            android:parentActivityName=".PreferencesActivity">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="com.caydey.ffshare.PreferencesActivity" />
+        </activity>
+        <activity
             android:name=".HandleMediaActivity"
             android:excludeFromRecents="true"
             android:exported="true"

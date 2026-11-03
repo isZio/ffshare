@@ -151,4 +151,7 @@
     <string name="result_saved_line">Saved to %1$s</string>
     <string name="result_share">Share</string>
     <string name="result_done">Done</string>
+    <string name="settings_help_title">Help</string>
+    <string name="settings_guide">Settings guide</string>
+    <string name="settings_guide_summary">What every option means, when to change it, recommended values and recipes</string>
 </resources>

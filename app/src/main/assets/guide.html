@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>参数说明与场景推荐</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --card:#ffffff; --text:#1b1d22; --muted:#6b7280;
+    --line:#e5e7eb; --accent:#0f8b7e; --accent-soft:#e6f4f1;
+    --warn:#b45309; --warn-soft:#fef3c7;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#111318; --card:#1a1d24; --text:#eceef2; --muted:#9aa3af;
+      --line:#2a2f39; --accent:#3ddbc4; --accent-soft:#12312d;
+      --warn:#fbbf24; --warn-soft:#3a2b0c;
+    }
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  body{
+    margin:0; padding:0 14px 40px; background:var(--bg); color:var(--text);
+    font:15px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Noto Sans CJK SC","Microsoft YaHei",sans-serif;
+  }
+  header{padding:20px 2px 10px}
+  h1{font-size:21px; margin:0 0 6px; letter-spacing:.2px}
+  .sub{color:var(--muted); font-size:13px}
+  .searchbar{position:sticky; top:0; z-index:9; padding:10px 0; background:var(--bg)}
+  .searchbar input{
+    width:100%; padding:11px 14px; font-size:15px; color:var(--text);
+    background:var(--card); border:1px solid var(--line); border-radius:12px; outline:none;
+  }
+  .searchbar input:focus{border-color:var(--accent)}
+  nav{display:flex; gap:8px; overflow-x:auto; padding:2px 0 12px; scrollbar-width:none}
+  nav::-webkit-scrollbar{display:none}
+  nav a{
+    flex:0 0 auto; padding:7px 12px; border-radius:999px; font-size:13px; text-decoration:none;
+    color:var(--accent); background:var(--accent-soft); border:1px solid transparent;
+  }
+  h2{font-size:16px; margin:26px 0 10px; padding-left:10px; border-left:3px solid var(--accent)}
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:14px;
+    padding:14px 15px; margin:10px 0;
+  }
+  .card h3{font-size:15px; margin:0 0 8px; display:flex; align-items:center; gap:8px; flex-wrap:wrap}
+  .chip{
+    font-size:11.5px; padding:2px 8px; border-radius:999px; font-weight:600;
+    background:var(--accent-soft); color:var(--accent); white-space:nowrap;
+  }
+  .chip.gray{background:transparent; color:var(--muted); border:1px solid var(--line)}
+  .row{margin:6px 0}
+  .row b{color:var(--text); font-weight:600}
+  .row span{color:var(--muted)}
+  .row em{font-style:normal; color:var(--accent); font-weight:600}
+  ul,ol{margin:6px 0 0; padding-left:20px}
+  li{margin:3px 0}
+  .tip{
+    background:var(--warn-soft); color:var(--warn); border-radius:12px;
+    padding:10px 13px; font-size:13.5px; margin:10px 0;
+  }
+  table{width:100%; border-collapse:collapse; font-size:13.5px; margin-top:6px}
+  th,td{padding:8px 6px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top}
+  th{color:var(--muted); font-weight:600; font-size:12.5px}
+  tr:last-child td{border-bottom:none}
+  code{
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12.5px;
+    background:var(--accent-soft); color:var(--accent); padding:1px 5px; border-radius:5px;
+    word-break:break-all;
+  }
+  .empty{display:none; text-align:center; color:var(--muted); padding:30px 0}
+  footer{margin-top:28px; text-align:center; color:var(--muted); font-size:12px}
+  .hidden{display:none !important}
+</style>
+</head>
+<body>
+<header>
+  <h1>参数说明与场景推荐</h1>
+  <div class="sub">每项参数的含义 · 什么时候该改 · 推荐值 · 现成配方</div>
+</header>
+
+<div class="searchbar">
+  <input id="q" type="search" placeholder="搜索参数，例如：CRF、微信、硬件、Exif" autocomplete="off">
+</div>
+
+<nav>
+  <a href="#recipe">场景配方</a>
+  <a href="#output">输出与命名</a>
+  <a href="#strength">压缩强度</a>
+  <a href="#codec">编码器</a>
+  <a href="#size">分辨率与体积</a>
+  <a href="#save">保存与缓存</a>
+  <a href="#misc">其他</a>
+  <a href="#faq">常见问题</a>
+</nav>
+
+<h2 id="recipe">场景配方</h2>
+
+<div class="card searchable">
+  <h3>发微信群 / QQ <span class="chip">怕超限</span></h3>
+  <ul>
+    <li>视频编解码器：<b>H.264（硬件加速，更快）</b></li>
+    <li>最大视频分辨率：<b>1080</b>（更小的选 720）</li>
+    <li>视频文件大小上限：<b>25M</b>（群文件）/ <b>10M</b>（聊天直发）</li>
+    <li>音频编解码器：<b>直接复制</b></li>
+  </ul>
+</div>
+
+<div class="card searchable">
+  <h3>发朋友圈 / 抖音 <span class="chip">画质优先</span></h3>
+  <ul>
+    <li>视频编解码器：<b>不指定</b>（软件 libx264）</li>
+    <li>视频 CRF：<b>23</b>；压缩预设：<b>medium</b></li>
+    <li>最大视频分辨率：<b>1080</b>；体积上限：<b>不限制</b></li>
+  </ul>
+</div>
+
+<div class="card searchable">
+  <h3>存档 / 二次剪辑素材 <span class="chip">尽量无损</span></h3>
+  <ul>
+    <li>视频 CRF：<b>18 ~ 20</b>；预设：<b>slow</b>（慢但省体积）</li>
+    <li>最大视频分辨率：<b>不限制</b></li>
+    <li>保留 Exif 标签：<b>开</b>（留住拍摄时间/机型）</li>
+    <li>输出文件名：<b>原始文件名</b>，便于回溯</li>
+  </ul>
+</div>
+
+<div class="card searchable">
+  <h3>手机 4K 录像要发出去 <span class="chip">又快又小</span></h3>
+  <ul>
+    <li>视频编解码器：<b>H.264（硬件加速）</b></li>
+    <li>最大视频分辨率：<b>1080</b>（4K 压 1080p，体积能降 70% 以上）</li>
+    <li>视频文件大小上限：<b>8M</b> 或直接不限制</li>
+  </ul>
+</div>
+
+<div class="card searchable">
+  <h3>录屏教程 / 满屏文字 <span class="chip">别用硬件</span></h3>
+  <ul>
+    <li>视频编解码器：<b>不指定</b>（软件 libx264）——硬件编码会把文字边缘糊成毛边</li>
+    <li>视频 CRF：<b>26</b>（文字场景观感依然够）</li>
+    <li>压缩预设：<b>fast</b> 节省时间</li>
+  </ul>
+</div>
+
+<div class="card searchable">
+  <h3>老手机 / 怕发烫 / 批量处理 <span class="chip">省电</span></h3>
+  <ul>
+    <li>视频编解码器：<b>H.264（硬件加速）</b></li>
+    <li>最大视频分辨率：<b>720</b></li>
+    <li>压缩预设：<b>fast</b>；CRF <b>26</b></li>
+  </ul>
+</div>
+
+<div class="card searchable">
+  <h3>图片批量转发 <span class="chip">只压图片</span></h3>
+  <ul>
+    <li>JPEG 图片质量 qscale：<b>10</b>（清晰）/ <b>18</b>（省空间）</li>
+    <li>最大图像分辨率：<b>2160</b>（长边像素，超过就缩）</li>
+    <li>保留 Exif 标签：建议<b>关</b>（抹掉定位信息）</li>
+  </ul>
+</div>
+
+<div class="card searchable">
+  <h3>语音 / 音乐转码 <span class="chip">兼容优先</span></h3>
+  <ul>
+    <li>音频编解码器：<b>AAC</b>（跨平台最稳），输出扩展名选 <code>.m4a</code> 或保持原格式</li>
+    <li>只想换容器不重编码：编解码器选 <b>Copy</b>，几秒完成，体积不变</li>
+  </ul>
+</div>
+
+<h2 id="output">输出与命名</h2>
+
+<div class="card searchable">
+  <h3>输出媒体文件名称 <span class="chip">默认：随机编号(UUID)</span></h3>
+  <div class="row"><b>是什么：</b><span>压缩结果的文件名规则。</span></div>
+  <div class="row"><b>三个选项：</b><span>原始文件名 / 随机编号 / 自定义。选「自定义」后会多出一行输入框（自定义输出媒体名称），只填文件名、不要带扩展名。</span></div>
+  <div class="row"><b>什么时候改：</b><span>想一眼认出产物选「原始文件名」；要固定命名选「自定义」。</span></div>
+  <div class="row"><em>注意：</em><span>自定义名批量处理会重名，系统会自动追加 <code>(1)</code>、<code>(2)</code>。</span></div>
+</div>
+
+<div class="card searchable">
+  <h3>保留 Exif 标签 <span class="chip">默认：关</span></h3>
+  <div class="row"><b>是什么：</b><span>拍摄时间、机型、GPS 定位等元数据。</span></div>
+  <div class="row"><b>为什么默认关：</b><span>分享前抹掉隐私信息，是这类工具的核心用途之一。</span></div>
+  <div class="row"><b>什么时候改：</b><span>要在相册里保留拍摄时间、做归档时打开。<em>发到公开平台建议保持关闭。</em></span></div>
+</div>
+
+<div class="card searchable">
+  <h3>图像 / 视频 / 音频 输出扩展名 <span class="chip gray">默认：保持原格式</span></h3>
+  <div class="row"><b>是什么：</b><span>是否强制转换容器格式，例如一律转 <code>.mp4</code>、<code>.jpg</code>。</span></div>
+  <div class="row"><b>什么时候改：</b><span>对方平台只认 mp4 → 选 <code>.mp4</code>；想更小 → 视频选 <code>.webm</code>，图片选 <code>.webp</code>。</span></div>
+  <div class="row"><em>注意：</em><span>转 webm 时编码器会被 ffmpeg 自动定为 VP9，硬件加速档不适用。</span></div>
+</div>
+
+<div class="card searchable">
+  <h3>将 GIF 视为视频 <span class="chip">默认：关</span></h3>
+  <div class="row"><b>是什么：</b><span>把 GIF 当视频用 H.264 压，而不是按图片处理。</span></div>
+  <div class="row"><b>什么时候改：</b><span>长动图想大幅瘦身时打开，通常能降到 1/5。</span></div>
+  <div class="row"><em>代价：</em><span>输出会变成 mp4，<b>丢失循环播放和透明通道</b>。</span></div>
+</div>
+
+<h2 id="strength">压缩强度</h2>
+
+<div class="card searchable">
+  <h3>视频 CRF <span class="chip">默认：23</span></h3>
+  <div class="row"><b>是什么：</b><span>恒定质量系数（0–51），控制「保画质还是保体积」。数值越小越清晰、文件越大。</span></div>
+  <div class="row"><b>经验值：</b><span>18 视觉无损 · 20 高质量 · <b>23 日常</b> · 26 体积优先 · 28+ 明显变糊。</span></div>
+  <div class="row"><em>记住：</em><span>CRF 每 +6，体积大约减半。</span></div>
+  <div class="row"><b>什么时候改：</b><span>存档→18；发群怕大→26；只求能看清→28。</span></div>
+</div>
+
+<div class="card searchable">
+  <h3>JPEG 图片质量 qscale <span class="chip">默认：10</span></h3>
+  <div class="row"><b>是什么：</b><span>图片压缩强度（1–31），数值越大越糊、越小。</span></div>
+  <div class="row"><b>建议：</b><span>高质量 5–10；省空间 15–20；超过 25 肉眼可辨损伤。</span></div>
+</div>
+
+<div class="card searchable">
+  <h3>FFmpeg 压缩预设 <span class="chip">默认：medium</span></h3>
+  <div class="row"><b>是什么：</b><span>编码速度与效率的权衡：faster / fast / medium / slow / slower。</span></div>
+  <div class="row"><b>怎么选：</b><span>手机端推荐 <b>fast</b>——同画质体积大约 +10%，速度提升 30% 左右；存档用 slow。</span></div>
+  <div class="row"><em>注意：</em><span>硬件编码档不支持这个参数，会被忽略。</span></div>
+</div>
+
+<div class="card searchable">
+  <h3>视频文件大小上限 <span class="chip">默认：不限制</span></h3>
+  <div class="row"><b>是什么：</b><span>给一个目标体积（512K–100M），App 会反算码率，保证输出不超过它。</span></div>
+  <div class="row"><b>什么时候改：</b><span>微信 25M、Discord 8M、论坛附件 2M —— 这个比 CRF 更好控结果。</span></div>
+  <div class="row"><em>注意：</em><span>它和 CRF 同时设会互相打架，<b>以上限为准</b>；追求画质就别设上限。</span></div>
+</div>
+
+<h2 id="size">分辨率与体积（收益最大）</h2>
+
+<div class="card searchable">
+  <h3>最大视频分辨率 <span class="chip">默认：1080</span></h3>
+  <div class="row"><b>是什么：</b><span>超过该值就等比缩小（只降不升）。</span></div>
+  <div class="row"><b>为什么重要：</b><span>4K → 1080p 通常能省 70% 以上体积，还能让编码快好几倍。</span></div>
+  <div class="row"><b>怎么选：</b><span>日常 1080 · 老机型/聊天 720 · 存档或大屏回放「不限制」。</span></div>
+</div>
+
+<div class="card searchable">
+  <h3>最大图像分辨率 <span class="chip">默认：2160</span></h3>
+  <div class="row"><b>是什么：</b><span>图片长边上限，4800 万像素照片会被压到 2160。</span></div>
+  <div class="row"><b>怎么选：</b><span>聊天/发帖 2160 足够；要打印或二次修图选「不限制」。</span></div>
+</div>
+
+<h2 id="codec">编码器</h2>
+
+<div class="card searchable">
+  <h3>视频编解码器 <span class="chip">默认：不指定（软件 libx264）</span></h3>
+  <table>
+    <tr><th>选项</th><th>用途</th></tr>
+    <tr><td>不指定</td><td>固定走软件 <code>libx264</code>，画质/体积最均衡，兼容性最好</td></tr>
+    <tr><td>Copy</td><td>只换容器不重编码，几秒完成，但<b>体积不会变小</b></td></tr>
+    <tr><td>H.264 / H.265</td><td>软件编码；H.265 同画质更小，但老设备可能播不动</td></tr>
+    <tr><td>H.264（硬件加速）</td><td>走 <code>h264_mediacodec</code>，<b>快 5–8 倍</b>，码率固定、画质略弱</td></tr>
+    <tr><td>H.265（硬件加速）</td><td>同上，体积更小，对播放端要求更高</td></tr>
+    <tr><td>VP9 / MPEG-4</td><td>特殊兼容需求，一般用不到</td></tr>
+  </table>
+  <div class="row"><b>什么时候用硬件：</b><span>赶时间、批量、手机发热敏感；<b>文字多的录屏、HDR 素材不建议</b>。</span></div>
+  <div class="row"><em>兜底：</em><span>硬件编码失败会自动改用软件编码重跑一次。</span></div>
+</div>
+
+<div class="card searchable">
+  <h3>音频编解码器 <span class="chip">默认：直接复制</span></h3>
+  <div class="row"><b>是什么：</b><span>Copy 不重新编码音频——最快且无损。</span></div>
+  <div class="row"><b>什么时候改：</b><span>目标平台不认原音频格式（如 opus/flac）时改 <b>AAC</b>；想进一步缩体积也可以选 AAC。</span></div>
+</div>
+
+<div class="card searchable">
+  <h3>自定义参数 <span class="chip gray">默认：空</span></h3>
+  <div class="row"><b>是什么：</b><span>直接接管命令行，填了之后上面所有压缩参数都会被忽略。</span></div>
+  <div class="row"><b>示例：</b><span><code>-c:v libx264 -crf 20 -vf scale=-2:720</code></span></div>
+  <div class="row"><em>注意：</em><span>不懂 ffmpeg 语法就别填，容易压出无法播放的文件。</span></div>
+</div>
+
+<h2 id="save">保存与缓存</h2>
+
+<div class="card searchable">
+  <h3>压缩完成后自动保存 <span class="chip">默认：开</span></h3>
+  <div class="row"><b>是什么：</b><span>压缩结果在弹出结果页之前先落盘一份。</span></div>
+  <div class="row"><b>存到哪：</b><span>视频 <code>Movies/FFShare</code>、图片 <code>Pictures/FFShare</code>、音频 <code>Music/FFShare</code>。</span></div>
+  <div class="row"><em>为什么需要：</em><span>压缩产物原本只在缓存里，1 小时后会被清理；不保存就等于白压。</span></div>
+</div>
+
+<div class="card searchable">
+  <h3>保存位置 <span class="chip">默认：系统相册</span></h3>
+  <div class="row"><b>是什么：</b><span>点一下选一个文件夹（走系统目录选择器），之后都存那里。</span></div>
+  <div class="row"><b>优点：</b><span>不需要任何存储权限，且各 Android 版本行为一致。</span></div>
+  <div class="row"><b>恢复：</b><span>「恢复为系统相册」清掉自定义目录。</span></div>
+</div>
+
+<div class="card searchable">
+  <h3>立即清理缓存 <span class="chip gray">按需</span></h3>
+  <div class="row"><b>是什么：</b><span>删除压缩过程中的临时文件，设置里会显示当前占用。</span></div>
+  <div class="row"><b>什么时候用：</b><span>压过大文件后想立刻释放空间；平时超 1 小时会自动清。</span></div>
+  <div class="row"><em>放心：</em><span>已保存到相册或已分享出去的成品不受影响。</span></div>
+</div>
+
+<h2 id="misc">其他</h2>
+
+<div class="card searchable">
+  <h3>启用日志 <span class="chip">默认：关</span></h3>
+  <div class="row"><b>是什么：</b><span>把每次执行的 ffmpeg 命令和完整输出存进「日志」页。</span></div>
+  <div class="row"><b>什么时候开：</b><span>压缩报错要排查时；平时关掉可以少占空间。</span></div>
+</div>
+
+<h2 id="faq">常见问题</h2>
+
+<div class="card searchable">
+  <h3>压完反而更大？</h3>
+  <div class="row"><span>源文件本身已经是高压缩的结果（例如从别的 App 转存），再编码只会有损+膨胀。此时用 <b>Copy</b> 或直接用原文件更好。</span></div>
+</div>
+
+<div class="card searchable">
+  <h3>报「压缩媒体时出错」？</h3>
+  <div class="row"><span>先看弹窗里的 ffmpeg 末尾输出：出现 <code>not divisible by 2</code> 是分辨率问题；<code>Unknown encoder</code> 是编码器缺失；<code>Permission denied</code> 是文件读取权限。硬件档失败会自动回退一次软件编码。</span></div>
+</div>
+
+<div class="card searchable">
+  <h3>硬件和软件怎么选？</h3>
+  <div class="row"><span>同一段 86.9 MB / 1080p 视频实测：硬件 <b>14.7 秒 / 26.5 MB</b>，软件 <b>108 秒 / 54.6 MB</b>。快了 7 倍，但硬件是固定码率、画质略弱。</span></div>
+</div>
+
+<div class="card searchable">
+  <h3>为什么结果页不自动弹分享了？</h3>
+  <div class="row"><span>现在的流程是：压缩 → 自动保存 → 结果页。要发出去点「分享」即可，避免每次都中断你的操作。</span></div>
+</div>
+
+<footer>本页内容随应用打包，离线可读 · 顶部搜索框可过滤上方条目</footer>
+
+<script>
+  (function () {
+    var q = document.getElementById('q');
+    var cards = Array.prototype.slice.call(document.querySelectorAll('.searchable'));
+    var empty = document.createElement('div');
+    empty.className = 'empty';
+    empty.textContent = '没有匹配的条目，换个关键词试试';
+    document.body.insertBefore(empty, document.querySelector('footer'));
+
+    q.addEventListener('input', function () {
+      var kw = q.value.trim().toLowerCase();
+      var shown = 0;
+      cards.forEach(function (c) {
+        var hit = !kw || c.textContent.toLowerCase().indexOf(kw) !== -1;
+        c.classList.toggle('hidden', !hit);
+        if (hit) shown++;
+      });
+      empty.style.display = shown ? 'none' : 'block';
+      document.querySelectorAll('h2').forEach(function (h) {
+        var el = h.nextElementSibling;
+        var any = false;
+        while (el && el.tagName !== 'H2') {
+          if (el.classList && el.classList.contains('searchable') && !el.classList.contains('hidden')) any = true;
+          el = el.nextElementSibling;
+        }
+        h.classList.toggle('hidden', !any);
+      });
+    });
+  })();
+</script>
+</body>
+</html>
