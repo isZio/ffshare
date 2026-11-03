@@ -62,14 +62,26 @@ class FFmpegParamMaker(val settings: Settings, val utils: Utils) {
             videoFormatParams.add("format=yuv420p")
 
             // video codec
-            if (settings.videoCodec != Settings.VideoCodecOpts.DEFAULT) {
+            if (settings.videoCodec == Settings.VideoCodecOpts.DEFAULT &&
+                outputMediaType != Utils.MediaType.WEBM
+            ) {
+                // ffmpeg-kit builds also register h264_mediacodec as "h264", and ffmpeg picks it
+                // before libx264 when no encoder is requested. The hardware encoder refuses the
+                // yuv420p input we enforce below on many devices (CodecException 0xffffffc3),
+                // so pin the software encoder unless the output is webm/vp9.
+                params.add("-c:v ${Settings.VideoCodecOpts.H264.raw}")
+            } else if (settings.videoCodec != Settings.VideoCodecOpts.DEFAULT) {
                 params.add("-c:v ${settings.videoCodec.raw}")
             }
 
             // H.26x requires dimensions to be divisible by 2, video scaling will account for this if applied
             if (!videoScaleApplied) {
-                val stream = mediaInformation.getStreams()[0]
-                if (stream.getWidth()?.rem(2) != 0L || stream.getHeight()?.rem(2) != 0L) {
+                // stream 0 is not guaranteed to be the video stream, and an unknown size must not
+                // crash the whole compression
+                val stream = mediaInformation.getStreams().firstOrNull { it.getType()?.lowercase() == "video" }
+                val width = stream?.getWidth()
+                val height = stream?.getHeight()
+                if (width != null && height != null && (width.rem(2) != 0L || height.rem(2) != 0L)) {
                     videoFormatParams.add("crop=trunc(iw/2)*2:trunc(ih/2)*2")
                     // could also use "pad=ceil(iw/2)*2:ceil(ih/2)*2" to add column/row of black pixels
                 }
