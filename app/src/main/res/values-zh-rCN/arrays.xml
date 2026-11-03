@@ -46,7 +46,7 @@
         <item>原始</item>
         <item>.mp3</item>
         <item>.ogg</item>
-        <item>.acc</item>
+        <item>.aac</item>
         <item>.wav</item>
         <item>.opus</item>
     </array>
@@ -54,7 +54,7 @@
         <item>UNKNOWN</item>
         <item>MP3</item>
         <item>OGG</item>
-        <item>ACC</item>
+        <item>AAC</item>
         <item>WAV</item>
         <item>OPUS</item>
     </array>
