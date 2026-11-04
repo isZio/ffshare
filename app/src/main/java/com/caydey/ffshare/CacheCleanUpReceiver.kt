@@ -1,51 +1,46 @@
 package com.caydey.ffshare
 
-import android.app.AlarmManager
-import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import com.caydey.ffshare.utils.CacheCleaner
 import timber.log.Timber
 import java.io.File
 
-class CacheCleanUpReceiver: BroadcastReceiver() {
+/**
+ * One-shot cache cleanup: drops compressed files older than an hour and re-schedules itself
+ * only while fresh files are still around. This replaces the old 12-hour repeating alarm.
+ */
+class CacheCleanUpReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         /*
         Cache structure
         /media/
             UUID/custom-name.mp4
-            UUID/custom-name.mp4
-            UUID/UUID.jpg
             UUID/UUID.jpg
          */
-
         Timber.d("Cleaning up cache")
 
         val mediaDir = File(context.cacheDir, "media")
-        val cacheFiles = mediaDir.listFiles()
-
-        cacheFiles?: return
-
+        val cacheFiles = mediaDir.listFiles() ?: return
 
         for (cacheFile in cacheFiles) {
-            // media file older that 1 hour
+            // media files older than 1 hour are safe to delete
             if (System.currentTimeMillis() - cacheFile.lastModified() > HOUR) {
                 Timber.d("Deleting '%s'", cacheFile)
-
                 cacheFile.deleteRecursively()
             }
         }
 
-        // re-scan directory checking if it is empty
-        if (mediaDir.listFiles()?.isEmpty() == true) {
-            Timber.d("Cache folder empty, canceling cleanup alarm")
-            // cancel alarm scheduler as there is no more cache files to cleanup
-            val sender = PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_CANCEL_CURRENT)
-            val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager?
-            alarmManager?.cancel(sender)
+        if (mediaDir.listFiles()?.isNotEmpty() == true) {
+            // something is still fresh, check again later
+            CacheCleaner.scheduleCleanup(context, CacheCleaner.retryDelayMs())
+        } else {
+            CacheCleaner.cancelCleanup(context)
         }
     }
+
     companion object {
-        private const val HOUR = 60 * 60 * 1_000
+        private const val HOUR = 60 * 60 * 1_000L
     }
 }
