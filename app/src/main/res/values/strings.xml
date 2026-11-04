@@ -1,5 +1,5 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <string name="app_name">FFShare</string>
+    <string name="app_name">zShrink</string>
     <string name="menu_item_settings">Settings</string>
     <string name="menu_item_logs">Logs</string>
     <string name="menu_item_delete_logs">Delete all Logs</string>
@@ -27,12 +27,10 @@
     <string name="flavor" tools:ignore="MissingTranslation">Flavor: %s</string>
 
 
-    <string name="app_description">Compress images and videos through ffmpeg before sharing them</string>
-    <string name="introduction_line_0">App Created by caydey <a href="https://github.com/caydey/ffshare">github</a></string>
-    <string name="introduction_line_1">Functionality (and code) inspired by Scrambled-Exif by juanitobananas <a href="https://gitlab.com/juanitobananas/scrambled-exif">gitlab</a></string>
-    <string name="introduction_line_2">FFmpeg library used is ffmpeg-kit-next by arthenica <a href="https://github.com/arthenica/ffmpeg-kit-next">github</a></string>
+    <string name="app_description">Compress images, videos and audio with FFmpeg before sharing — smaller files, faster to send.</string>
 
     <string name="select_file_button" tools:ignore="MissingTranslation">Select file</string>
+    <string name="home_hint">Tip: you can also share an image, video or audio file to zShrink from your gallery or file manager.</string>
 
     <string name="ffmpeg_command">ffmpeg command running:</string>
     <string name="input_file">Input file:</string>
@@ -114,7 +112,7 @@
     <string name="settings_auto_save">Save compressed files automatically</string>
     <string name="settings_auto_save_summary">Copy every compressed file to a permanent location before the share dialog opens</string>
     <string name="settings_auto_save_location">Save location</string>
-    <string name="settings_auto_save_location_default">System gallery (Movies/FFShare, Pictures/FFShare, Music/FFShare)</string>
+    <string name="settings_auto_save_location_default">System gallery (Movies/zShrink, Pictures/zShrink, Music/zShrink)</string>
     <string name="settings_auto_save_location_selected">Custom folder: %1$s</string>
     <string name="settings_auto_save_reset">Use the system gallery again</string>
     <string name="settings_auto_save_reset_summary">Forget the folder selected above</string>
@@ -149,9 +147,16 @@
     <string name="result_elapsed_line">Time: %1$s</string>
     <string name="result_files_line">%1$d files</string>
     <string name="result_saved_line">Saved to %1$s</string>
-    <string name="result_share">Share</string>
+    <string name="result_save">Save</string>
     <string name="result_done">Done</string>
     <string name="settings_help_title">Help</string>
     <string name="settings_guide">Settings guide</string>
     <string name="settings_guide_summary">What every option means, when to change it, recommended values and recipes</string>
+    <string name="result_open">Open</string>
+    <string name="error_timeout">Compression stalled and was stopped</string>
+    <string name="notif_channel_name">Compression</string>
+    <string name="notif_channel_desc">Shows progress while compressing</string>
+    <string name="notif_compressing_title">Compressing…</string>
+    <string name="notif_compressing_text">zShrink is working in the background</string>
+    <string name="notif_done_title">Compression finished</string>
 </resources>

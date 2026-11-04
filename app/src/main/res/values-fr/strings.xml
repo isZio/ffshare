@@ -1,5 +1,5 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <string name="app_name">FFShare</string>
+    <string name="app_name">zShrink</string>
     <string name="menu_item_settings">Paramètres</string>
     <string name="menu_item_logs">Journaux</string>
     <string name="menu_item_delete_logs">Supprimer tous les journaux</string>
@@ -28,9 +28,6 @@
     
     
     <string name="app_description">Compresser images et vidéos via ffmpeg avant de les partager</string>
-    <string name="introduction_line_0">Application Créée par Caydey <a href="https://github.com/caydey/ffshare">github</a></string>
-    <string name="introduction_line_1">Fonctionnalité (et code) inspirée de Scrambled-Exif par juanitobananas <a href="https://gitlab.com/juanitobananas/scrambled-exif">gitlab</a></string>
-    <string name="introduction_line_2">La bibliothèque FFmpeg utilisée est le kit ffmpeg de tanersener <a href="https://github.com/tanersener/ffmpeg-kit">github</a></string>    
 
     <string name="select_file_button" tools:ignore="MissingTranslation">Choisir un fichier</string>
     

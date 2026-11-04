@@ -1,5 +1,5 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <string name="app_name">FFShare</string>
+    <string name="app_name">zShrink</string>
     <string name="menu_item_settings">设置</string>
     <string name="menu_item_logs">日志</string>
     <string name="menu_item_delete_logs">删除所有日志</string>
@@ -27,12 +27,10 @@
     <string name="flavor" tools:ignore="MissingTranslation">渠道：%s</string>
 
 
-    <string name="app_description">在分享图片和视频之前，通过FFmpeg压缩它们</string>
-    <string name="introduction_line_0">此应用由caydey制作：<a href="https://github.com/caydey/ffshare">GitHub</a></string>
-    <string name="introduction_line_1">功能（和代码）由juanitobananas的Scrambled Exif启发：<a href="https://gitlab.com/juanitobananas/scrambled-exif">GitLab</a></string>
-    <string name="introduction_line_2">使用的FFmpeg库为ARTHENICA的FFmpegKitNext：<a href="https://github.com/arthenica/ffmpeg-kit-next">GitHub</a></string>
+    <string name="app_description">在分享前用 FFmpeg 压缩图片、视频与音频，体积更小、发送更快。</string>
 
     <string name="select_file_button" tools:ignore="MissingTranslation">选择文件</string>
+    <string name="home_hint">提示：也可以在相册或文件管理器中，把图片、视频或音频分享到 zShrink。</string>
 
     <string name="ffmpeg_command">使用的FFmpeg命令：</string>
     <string name="input_file">输入文件：</string>
@@ -114,7 +112,7 @@
     <string name="settings_auto_save">压缩完成后自动保存</string>
     <string name="settings_auto_save_summary">在弹出分享面板之前，先把压缩文件另存到固定位置</string>
     <string name="settings_auto_save_location">保存位置</string>
-    <string name="settings_auto_save_location_default">系统相册（Movies/FFShare、Pictures/FFShare、Music/FFShare）</string>
+    <string name="settings_auto_save_location_default">系统相册（Movies/zShrink、Pictures/zShrink、Music/zShrink）</string>
     <string name="settings_auto_save_location_selected">自定义文件夹：%1$s</string>
     <string name="settings_auto_save_reset">恢复为系统相册</string>
     <string name="settings_auto_save_reset_summary">忘记上面选择的文件夹</string>
@@ -149,9 +147,16 @@
     <string name="result_elapsed_line">耗时 %1$s</string>
     <string name="result_files_line">共 %1$d 个文件</string>
     <string name="result_saved_line">已保存到 %1$s</string>
-    <string name="result_share">分享</string>
+    <string name="result_save">保存</string>
     <string name="result_done">完成</string>
     <string name="settings_help_title">帮助</string>
     <string name="settings_guide">参数说明与场景推荐</string>
     <string name="settings_guide_summary">每项参数的含义、什么时候该改、推荐值与现成配方</string>
+    <string name="result_open">打开</string>
+    <string name="error_timeout">压缩长时间无进展，已停止</string>
+    <string name="notif_channel_name">压缩</string>
+    <string name="notif_channel_desc">压缩过程中显示进度</string>
+    <string name="notif_compressing_title">正在压缩…</string>
+    <string name="notif_compressing_text">zShrink 正在后台处理</string>
+    <string name="notif_done_title">压缩完成</string>
 </resources>

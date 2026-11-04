@@ -3,7 +3,6 @@ package com.caydey.ffshare
 import android.content.Intent
 import android.os.Bundle
 import android.os.Parcelable
-import android.text.method.LinkMovementMethod
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.Button
@@ -45,11 +44,6 @@ class MainActivity : AppCompatActivity() {
         val versionName = App.versionName
         findViewById<TextView>(R.id.lblVersion).text = getString(R.string.version, versionName)
         
-        // allow clicking on links
-        findViewById<TextView>(R.id.lblIntroductionLine0).movementMethod = LinkMovementMethod.getInstance()
-        findViewById<TextView>(R.id.lblIntroductionLine1).movementMethod = LinkMovementMethod.getInstance()
-        findViewById<TextView>(R.id.lblIntroductionLine2).movementMethod = LinkMovementMethod.getInstance()
-
         // Select File button listener
         findViewById<Button>(R.id.btnSelectFile).setOnClickListener {
             selectedFileLauncher.launch(utils.getAllowedMimes())

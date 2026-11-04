@@ -1,17 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
     <SwitchPreference
             android:key="pref_save_logs"
             android:defaultValue="false"
+            app:iconSpaceReserved="false"
             android:title="@string/settings_save_logs"
             android:summary="@string/settings_save_logs_summary" />
     <PreferenceCategory
         android:key="prefs_output"
+        app:iconSpaceReserved="false"
         android:title="@string/settings_output_options_title">
         <ListPreference
             android:key="pref_compressed_media_name"
             android:defaultValue="UUID"
+            app:iconSpaceReserved="false"
             android:title="@string/settings_compressed_media_name"
             android:summary="@string/settings_compressed_media_name_summary"
             android:entries="@array/settings_compressed_media_name"
@@ -21,22 +25,26 @@
         <EditTextPreference
             android:key="pref_compressed_media_custom_name"
             android:defaultValue=""
+            app:iconSpaceReserved="false"
             android:title="@string/settings_compressed_media_custom_name"
             android:summary="@string/settings_compressed_media_custom_name_summary" />
 
         <SwitchPreference
             android:key="pref_copy_exif_tags"
             android:defaultValue="false"
+            app:iconSpaceReserved="false"
             android:title="@string/settings_copy_exif_tags"
             android:summary="@string/settings_copy_exif_tags_summary" />
     </PreferenceCategory>
 
     <PreferenceCategory
         android:key="prefs_conversions"
+        app:iconSpaceReserved="false"
         android:title="@string/settings_conversions_options_title">
         <ListPreference
             android:key="pref_convert_image_output"
             android:defaultValue="UNKNOWN"
+            app:iconSpaceReserved="false"
             android:summary="%s"
             android:title="@string/settings_convert_image_output"
             android:entries="@array/settings_convert_image_output"
@@ -45,6 +53,7 @@
         <ListPreference
             android:key="pref_convert_video_output"
             android:defaultValue="UNKNOWN"
+            app:iconSpaceReserved="false"
             android:summary="%s"
             android:title="@string/settings_convert_video_output"
             android:entries="@array/settings_convert_video_output"
@@ -53,6 +62,7 @@
         <ListPreference
             android:key="pref_convert_audio_output"
             android:defaultValue="UNKNOWN"
+            app:iconSpaceReserved="false"
             android:summary="%s"
             android:title="@string/settings_convert_audio_output"
             android:entries="@array/settings_convert_audio_output"
@@ -62,16 +72,19 @@
         <SwitchPreference
             android:key="pref_treat_gifs_as_videos"
             android:defaultValue="false"
+            app:iconSpaceReserved="false"
             android:title="@string/settings_treat_gifs_as_videos"
             />
     </PreferenceCategory>
 
     <PreferenceCategory
         android:key="prefs_compression"
+        app:iconSpaceReserved="false"
         android:title="@string/settings_compression_options_title">
         <ListPreference
             android:key="pref_jpeg_qscale"
             android:defaultValue="10"
+            app:iconSpaceReserved="false"
             android:title="@string/settings_jpeg_qscale"
             android:summary="@string/settings_jpeg_qscale_summary"
             android:entries="@array/settings_jpeg_qscale"
@@ -79,6 +92,7 @@
         <ListPreference
             android:key="pref_video_crf"
             android:defaultValue="23"
+            app:iconSpaceReserved="false"
             android:title="@string/settings_video_crf"
             android:summary="@string/settings_video_crf_summary"
             android:entries="@array/settings_video_crf"
@@ -87,6 +101,7 @@
         <ListPreference
             android:key="pref_compression_preset"
             android:defaultValue="medium"
+            app:iconSpaceReserved="false"
             android:title="@string/settings_compression_preset"
             android:summary="@string/settings_compression_preset_summary"
             android:entries="@array/settings_compression_preset"
@@ -95,6 +110,7 @@
         <ListPreference
             android:key="pref_video_max_file_size"
             android:defaultValue="0"
+            app:iconSpaceReserved="false"
             android:title="@string/settings_video_max_file_size"
             android:summary="@string/settings_video_max_file_size_summary"
             android:entries="@array/settings_video_max_file_size"
@@ -103,6 +119,7 @@
         <ListPreference
             android:key="pref_video_codec"
             android:defaultValue="DEFAULT"
+            app:iconSpaceReserved="false"
             android:summary="%s"
             android:title="@string/settings_video_codec"
             android:entries="@array/settings_video_codec"
@@ -111,6 +128,7 @@
         <ListPreference
             android:key="pref_audio_codec"
             android:defaultValue="DEFAULT"
+            app:iconSpaceReserved="false"
             android:summary="%s"
             android:title="@string/settings_audio_codec"
             android:entries="@array/settings_audio_codec"
@@ -119,6 +137,7 @@
         <ListPreference
             android:key="pref_max_video_resolution"
             android:defaultValue="1080"
+            app:iconSpaceReserved="false"
             android:title="@string/settings_max_video_resolution"
             android:summary="@string/settings_max_video_resolution_summary"
             android:entries="@array/settings_max_resolution"
@@ -126,6 +145,7 @@
         <ListPreference
             android:key="pref_max_image_resolution"
             android:defaultValue="2160"
+            app:iconSpaceReserved="false"
             android:title="@string/settings_max_image_resolution"
             android:summary="@string/settings_max_image_resolution_summary"
             android:entries="@array/settings_max_resolution"
@@ -134,64 +154,76 @@
 
     <PreferenceCategory
         android:key="prefs_custom_params"
+        app:iconSpaceReserved="false"
         android:title="@string/settings_custom_params_title"
         android:summary="@string/settings_custom_params_summary">
 
         <EditTextPreference
             android:key="pref_custom_video_params"
             android:defaultValue=""
+            app:iconSpaceReserved="false"
             android:title="@string/settings_custom_video_params" />
         <EditTextPreference
             android:key="pref_custom_image_params"
             android:defaultValue=""
+            app:iconSpaceReserved="false"
             android:title="@string/settings_custom_image_params" />
         <EditTextPreference
             android:key="pref_custom_audio_params"
             android:defaultValue=""
+            app:iconSpaceReserved="false"
             android:title="@string/settings_custom_audio_params" />
     </PreferenceCategory>
 
     <PreferenceCategory
         android:key="prefs_saving"
+        app:iconSpaceReserved="false"
         android:title="@string/settings_saving_options_title">
 
         <SwitchPreference
             android:key="pref_auto_save"
             android:defaultValue="true"
+            app:iconSpaceReserved="false"
             android:title="@string/settings_auto_save"
             android:summary="@string/settings_auto_save_summary" />
 
         <Preference
             android:key="pref_auto_save_location"
             android:persistent="false"
+            app:iconSpaceReserved="false"
             android:title="@string/settings_auto_save_location"
             android:summary="@string/settings_auto_save_location_default" />
 
         <Preference
             android:key="pref_auto_save_reset"
             android:persistent="false"
+            app:iconSpaceReserved="false"
             android:title="@string/settings_auto_save_reset"
             android:summary="@string/settings_auto_save_reset_summary" />
     </PreferenceCategory>
 
     <PreferenceCategory
         android:key="prefs_storage"
+        app:iconSpaceReserved="false"
         android:title="@string/settings_storage_options_title">
 
         <Preference
             android:key="pref_cache_cleanup"
             android:persistent="false"
+            app:iconSpaceReserved="false"
             android:title="@string/settings_clear_cache"
             android:summary="@string/settings_clear_cache_summary" />
     </PreferenceCategory>
 
     <PreferenceCategory
         android:key="prefs_help"
+        app:iconSpaceReserved="false"
         android:title="@string/settings_help_title">
 
         <Preference
             android:key="pref_open_guide"
             android:persistent="false"
+            app:iconSpaceReserved="false"
             android:title="@string/settings_guide"
             android:summary="@string/settings_guide_summary" />
     </PreferenceCategory>
