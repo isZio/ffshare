@@ -22,13 +22,14 @@ import java.io.File
  *    Movies/FFShare, Pictures/FFShare or Music/FFShare depending on the media type.
  */
 object MediaSaver {
-    const val ALBUM_DIR = "FFShare"
+    const val ALBUM_DIR = "zShrink"
 
     data class SaveResult(
         val savedCount: Int,
         val failedCount: Int,
-        val location: String, // human readable destination, e.g. "Movies/FFShare"
-        val needsStoragePermission: Boolean = false
+        val location: String, // human readable destination, e.g. "Movies/zShrink"
+        val needsStoragePermission: Boolean = false,
+        val savedUris: List<Uri> = emptyList() // uris of the copies that can be opened again
     ) {
         val isSuccess: Boolean get() = savedCount > 0 && failedCount == 0
         val isCompleteFailure: Boolean get() = savedCount == 0
@@ -57,6 +58,7 @@ object MediaSaver {
     private fun saveToDocumentTree(context: Context, tree: DocumentFile, uris: List<Uri>): SaveResult {
         var saved = 0
         var failed = 0
+        val savedUris = mutableListOf<Uri>()
         uris.forEach { uri ->
             val mime = mimeTypeOf(context, uri)
             val name = uniqueName(tree, fileNameOf(context, uri, mime))
@@ -71,6 +73,7 @@ object MediaSaver {
                 }.isSuccess
                 if (copied) {
                     saved++
+                    savedUris.add(document.uri)
                 } else {
                     failed++
                     runCatching { document.delete() }
@@ -83,7 +86,7 @@ object MediaSaver {
             }
         }
         val location = tree.name ?: tree.uri.lastPathSegment ?: ""
-        return SaveResult(saved, failed, location)
+        return SaveResult(saved, failed, location, savedUris = savedUris)
     }
 
     private fun saveToGallery(context: Context, uris: List<Uri>): SaveResult {
@@ -97,26 +100,28 @@ object MediaSaver {
         var saved = 0
         var failed = 0
         var lastLocation = ""
+        val savedUris = mutableListOf<Uri>()
         uris.forEach { uri ->
             val mime = mimeTypeOf(context, uri)
             val name = fileNameOf(context, uri, mime)
-            val location = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val (location, savedUri) = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 saveToMediaStore(context, uri, name, mime)
             } else {
-                saveToPublicDir(context, uri, name, mime)
+                saveToPublicDir(context, uri, name, mime) to null
             }
             if (location != null) {
                 saved++
                 lastLocation = location
+                savedUri?.let { savedUris.add(it) }
             } else {
                 failed++
             }
         }
-        return SaveResult(saved, failed, lastLocation)
+        return SaveResult(saved, failed, lastLocation, savedUris = savedUris)
     }
 
     /** API 29+: MediaStore insert with RELATIVE_PATH, no permission required. */
-    private fun saveToMediaStore(context: Context, uri: Uri, name: String, mime: String): String? {
+    private fun saveToMediaStore(context: Context, uri: Uri, name: String, mime: String): Pair<String?, Uri?> {
         val values = ContentValues().apply {
             put(MediaStore.MediaColumns.DISPLAY_NAME, name)
             put(MediaStore.MediaColumns.MIME_TYPE, mime)
@@ -131,7 +136,7 @@ object MediaSaver {
         val item = runCatching { context.contentResolver.insert(collection, values) }.getOrNull()
         if (item == null) {
             Timber.d("MediaStore insert returned null for '%s'", name)
-            return null
+            return null to null
         }
         val copied = runCatching {
             context.contentResolver.openOutputStream(item)?.use { out ->
@@ -141,12 +146,12 @@ object MediaSaver {
         }.isSuccess
         if (!copied) {
             runCatching { context.contentResolver.delete(item, null, null) }
-            return null
+            return null to null
         }
         values.clear()
         values.put(MediaStore.MediaColumns.IS_PENDING, 0)
         runCatching { context.contentResolver.update(item, values, null, null) }
-        return "${relativeDirFor(mime)}/$ALBUM_DIR"
+        return "${relativeDirFor(mime)}/$ALBUM_DIR" to item
     }
 
     /** API 26-28: plain file in the public media directory + media scanner, needs WRITE permission. */
@@ -214,7 +219,7 @@ object MediaSaver {
         }.getOrNull()
         if (!queried.isNullOrBlank()) return queried
         val fallback = uri.lastPathSegment?.substringAfterLast('/')?.takeIf { it.isNotBlank() }
-        return fallback ?: "FFShare_${System.currentTimeMillis()}.${defaultExtensionFor(mime)}"
+        return fallback ?: "zShrink_${System.currentTimeMillis()}.${defaultExtensionFor(mime)}"
     }
 
     private fun defaultExtensionFor(mime: String): String = when {

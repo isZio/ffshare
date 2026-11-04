@@ -1,20 +1,21 @@
 package com.caydey.ffshare
 
-import android.app.AlarmManager
-import android.app.PendingIntent
+import android.Manifest
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
-import android.os.SystemClock
 import android.view.WindowManager
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.caydey.ffshare.extensions.parcelable
 import com.caydey.ffshare.extensions.parcelableArrayList
+import com.caydey.ffshare.utils.CacheCleaner
 import com.caydey.ffshare.utils.FFmpegParamMaker
 import com.caydey.ffshare.utils.MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE
 import com.caydey.ffshare.utils.MY_PERMISSIONS_REQUEST_WRITE_EXTERNAL_STORAGE
@@ -38,6 +39,13 @@ class HandleMediaActivity : AppCompatActivity() {
     // upstream has a known flaky first run, one automatic retry usually goes through
     private var retriedCompression = false
 
+    // whether the activity is visible, used to decide if a completion notification is needed
+    private var isInForeground = false
+
+    private companion object {
+        const val REQUEST_NOTIFICATIONS = 300
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_handle_media)
@@ -46,6 +54,13 @@ class HandleMediaActivity : AppCompatActivity() {
 
         // a new share starts with the encoder the user picked
         FFmpegParamMaker.forceSoftwareCodec = false
+
+        // API 33+ needs a runtime permission before the completion notification can be shown
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), REQUEST_NOTIFICATIONS)
+        }
 
         if (utils.isReadPermissionGranted) {
             onMediaReceive()
@@ -57,12 +72,19 @@ class HandleMediaActivity : AppCompatActivity() {
 
     override fun finish() {
         mediaCompressor.cancelAllOperations()
-        scheduleCacheCleanup()
+        CompressionService.stop(this)
+        CacheCleaner.scheduleCleanup(this)
         super.finish()
     }
 
+    override fun onStart() {
+        super.onStart()
+        isInForeground = true
+    }
+
     override fun onStop() {
-        mediaCompressor.cancelAllOperations()
+        // keep compressing while the app is in the background; the foreground service holds the process
+        isInForeground = false
         super.onStop()
     }
 
@@ -105,10 +127,12 @@ class HandleMediaActivity : AppCompatActivity() {
             Timber.d("No files found in shared intent")
             finish()
         } else {
+            CompressionService.start(this)
             // callback
             mediaCompressor.compressFiles(this, receivedMedia) { outcome ->
                 // ffmpeg invokes this callback on its own worker thread, every UI call must be posted
                 runOnUiThread {
+                    CompressionService.stop(this@HandleMediaActivity)
                     val compressedMedia = outcome.uris
                     when {
                         compressedMedia.isEmpty() && outcome.errorOutput != null -> {
@@ -138,6 +162,9 @@ class HandleMediaActivity : AppCompatActivity() {
      */
     private fun showCompressionError(output: String) {
         val tail = output.trim().lines().takeLast(25).joinToString("\n").ifBlank { getString(R.string.ffmpeg_error) }
+        if (!isInForeground) {
+            Notifications.notifyFinished(this, getString(R.string.ffmpeg_error))
+        }
         AlertDialog.Builder(this)
             .setTitle(R.string.ffmpeg_error)
             .setMessage(tail)
@@ -169,21 +196,18 @@ class HandleMediaActivity : AppCompatActivity() {
                     utils.requestWritePermissions(this)
                     return@runOnUiThread
                 }
-                val location = when {
-                    result.isSuccess -> result.location
-                    result.savedCount > 0 -> result.location
-                    else -> null
-                }
                 if (result.isCompleteFailure) {
                     Toast.makeText(this, getString(R.string.save_failed_toast), Toast.LENGTH_LONG).show()
                 }
-                showResult(outcome, location)
+                showResult(outcome, result)
             }
         }.start()
     }
 
-    /** Result summary: size before/after, ratio and elapsed time. Sharing is opt-in. */
-    private fun showResult(outcome: MediaCompressor.CompressionOutcome, savedLocation: String?) {
+    /** Result summary: size before/after, ratio and elapsed time. Sharing has been removed. */
+    private fun showResult(outcome: MediaCompressor.CompressionOutcome, saveResult: MediaSaver.SaveResult?) {
+        val savedLocation = saveResult?.location
+        val savedUris = saveResult?.savedUris.orEmpty()
         val inputHuman = utils.bytesToHuman(outcome.inputBytes)
         val outputHuman = utils.bytesToHuman(outcome.outputBytes)
         val ratio = if (outcome.inputBytes > 0) {
@@ -207,56 +231,67 @@ class HandleMediaActivity : AppCompatActivity() {
             lines.add(getString(R.string.result_saved_line, savedLocation))
         }
 
-        AlertDialog.Builder(this)
+        val builder = AlertDialog.Builder(this)
             .setTitle(R.string.result_dialog_title)
             .setMessage(lines.joinToString("\n"))
-            .setPositiveButton(R.string.result_share) { _, _ ->
-                shareMedia(outcome.uris)
+            .setCancelable(false)
+
+        if (savedLocation.isNullOrBlank()) {
+            // sharing is gone, so an unsaved result still needs an explicit way out
+            builder.setPositiveButton(R.string.result_save) { _, _ -> saveOnly(outcome) }
+            builder.setNegativeButton(R.string.close) { _, _ -> finish() }
+        } else {
+            builder.setPositiveButton(R.string.result_done) { _, _ -> finish() }
+            if (savedUris.isNotEmpty()) {
+                builder.setNeutralButton(R.string.result_open) { _, _ -> openFile(savedUris.first()) }
+            }
+        }
+
+        // only when the app is in the background, otherwise the dialog is already visible
+        if (!isInForeground) {
+            Notifications.notifyFinished(this, lines.take(2).joinToString(" · "))
+        }
+        builder.show()
+    }
+
+    /** Opens a saved output in whatever app can handle it. */
+    private fun openFile(uri: Uri) {
+        val mime = runCatching { contentResolver.getType(uri) }.getOrNull() ?: "*/*"
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(uri, mime)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        val opened = runCatching { startActivity(intent) }.isSuccess
+        if (opened) {
+            finish()
+        } else {
+            Toast.makeText(this, getString(R.string.error_unknown_filetype), Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    /**
+     * Saves the compressed files and closes, without re-opening the result dialog.
+     * Used when the user turned auto-save off and presses "save" in the result dialog.
+     */
+    private fun saveOnly(outcome: MediaCompressor.CompressionOutcome) {
+        Toast.makeText(this, getString(R.string.save_in_progress), Toast.LENGTH_SHORT).show()
+        Thread {
+            val result = MediaSaver.saveAll(applicationContext, outcome.uris, settings.autoSaveTreeUri)
+            runOnUiThread {
+                if (isFinishing || isDestroyed) return@runOnUiThread
+                if (result.needsStoragePermission) {
+                    pendingOutcome = outcome
+                    utils.requestWritePermissions(this)
+                    return@runOnUiThread
+                }
+                val message = when {
+                    result.isSuccess -> getString(R.string.save_success_toast, result.savedCount, result.location)
+                    result.savedCount > 0 -> getString(R.string.save_partial_toast, result.savedCount, result.failedCount)
+                    else -> getString(R.string.save_failed_toast)
+                }
+                Toast.makeText(this, message, Toast.LENGTH_LONG).show()
                 finish()
             }
-            .setNegativeButton(R.string.result_done) { _, _ -> finish() }
-            .setCancelable(false)
-            .show()
-    }
-
-    private fun shareMedia(mediaUris: ArrayList<Uri>) {
-        val shareIntent = Intent()
-
-        // temp permissions for other app to view file
-        shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-
-        // add compressed media files
-        if (mediaUris.size == 1) {
-            Timber.d("Creating share intent for single item")
-            shareIntent.action = Intent.ACTION_SEND
-            shareIntent.putExtra(Intent.EXTRA_STREAM, mediaUris[0])
-        } else {
-            Timber.d("Creating share intent for multiple items")
-            shareIntent.action = Intent.ACTION_SEND_MULTIPLE
-            shareIntent.putExtra(Intent.EXTRA_STREAM, mediaUris)
-        }
-
-        // set mime for each file
-        mediaUris.forEach { mediaUri ->
-            shareIntent.setDataAndType(mediaUri, contentResolver.getType(mediaUri))
-        }
-
-        val chooser = Intent.createChooser(shareIntent, "media")
-        startActivity(chooser)
-    }
-
-    private fun scheduleCacheCleanup() {
-        Timber.d("Scheduling cleanup alarm")
-        val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val intent = Intent(applicationContext, CacheCleanUpReceiver::class.java)
-        val pendingIntent = PendingIntent.getBroadcast(applicationContext, 0, intent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_CANCEL_CURRENT)
-
-        // every 12 hours clear cache
-        alarmManager.setInexactRepeating(
-            AlarmManager.ELAPSED_REALTIME_WAKEUP,
-            SystemClock.elapsedRealtime(),
-            AlarmManager.INTERVAL_HALF_DAY,
-            pendingIntent
-        )
+        }.start()
     }
 }
