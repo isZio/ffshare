@@ -19,7 +19,12 @@ class FFmpegParamMaker(val settings: Settings, val utils: Utils) {
         // resolve the encoder once, a rejected hardware attempt is retried with the software one
         val requestedCodec = settings.videoCodec
         val videoCodec = if (requestedCodec.isHardware && forceSoftwareCodec) {
-            Settings.VideoCodecOpts.H264
+            // fall back to the software encoder that matches the requested family
+            if (requestedCodec == Settings.VideoCodecOpts.H265_HW) {
+                Settings.VideoCodecOpts.H265
+            } else {
+                Settings.VideoCodecOpts.H264
+            }
         } else {
             requestedCodec
         }

@@ -10,6 +10,7 @@ import android.os.Looper
 import android.os.SystemClock
 import android.view.View
 import android.widget.Button
+import android.widget.ProgressBar
 import android.widget.TableRow
 import android.widget.TextView
 import android.widget.Toast
@@ -22,6 +23,8 @@ import com.caydey.ffshare.utils.logs.Log
 import com.caydey.ffshare.utils.logs.LogsDbHelper
 import timber.log.Timber
 import java.util.*
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicLong
 
 
 class MediaCompressor(private val context: Context) {
@@ -62,6 +65,8 @@ class MediaCompressor(private val context: Context) {
         val txtProcessedTimeTotal: TextView = activity.findViewById(R.id.txtProcessedTimeTotal)
         val txtProcessedPercent: TextView = activity.findViewById(R.id.txtProcessedPercent)
         val processedTableRow: TableRow = activity.findViewById(R.id.processedTableRow)
+        val progressBar: ProgressBar = activity.findViewById(R.id.progressBar)
+        val txtRemaining: TextView = activity.findViewById(R.id.txtRemaining)
 
         // cancel button
         val btnCancel: Button = activity.findViewById(R.id.btnCancel)
@@ -84,6 +89,8 @@ class MediaCompressor(private val context: Context) {
         val showProgress = !utils.isImage(mediaType)
         if (!showProgress) {
             processedTableRow.visibility = View.INVISIBLE
+            progressBar.visibility = View.INVISIBLE
+            txtRemaining.visibility = View.INVISIBLE
         }
 
         val inputFileName = utils.getFilenameFromUri(inputFileUri) ?: "unknown"
@@ -134,10 +141,17 @@ class MediaCompressor(private val context: Context) {
             txtProcessedTime.text = utils.millisToMicrowaveTime(0)
             txtProcessedTimeTotal.text = utils.millisToMicrowaveTime(duration)
             txtProcessedPercent.text = context.getString(R.string.format_percentage, 0.0f)
+            progressBar.progress = 0
+            txtRemaining.text = context.getString(R.string.remaining) + " " + utils.millisToMicrowaveTime(duration)
         }
 
         Timber.d("Executing ffmpeg command: 'ffmpeg %s'", command)
-        FFmpegKit.executeAsync(command, { session ->
+        val finished = AtomicBoolean(false)
+        val lastProgressAt = AtomicLong(SystemClock.elapsedRealtime())
+        val watchdog = Handler(Looper.getMainLooper())
+        val ffmpegSession = FFmpegKit.executeAsync(command, { session ->
+            finished.set(true)
+            watchdog.removeCallbacksAndMessages(null)
             // completed
             if (session.getReturnCode()?.isValueSuccess() == false) { // failed
                 if (session.getReturnCode()?.isValueCancel() == false) { // failure was not caused by a cancel
@@ -163,7 +177,12 @@ class MediaCompressor(private val context: Context) {
                 Timber.d("ffmpeg command executed successfully")
                 if (settings.copyExifTags && ExifTools.isValidType(mediaType)) {
                     Timber.d("copying exif tags")
-                    ExifTools.copyExif(context.contentResolver.openInputStream(inputFileUri)!!, outputFile)
+                    // a broken exif block must not turn a successful compression into a crash
+                    runCatching {
+                        context.contentResolver.openInputStream(inputFileUri)?.use { input ->
+                            ExifTools.copyExif(input, outputFile)
+                        }
+                    }.onFailure { Timber.w(it, "unable to copy exif tags") }
                 }
                 val outputFileCurrentSize = outputFile.length()
                 // """Only the original thread that created a view hierarchy can touch its views."""
@@ -171,6 +190,8 @@ class MediaCompressor(private val context: Context) {
                     // update TextViews to their final values 97.8% -> 100.0%
                     txtProcessedPercent.text = context.getString(R.string.format_percentage, 100.0f)
                     txtProcessedTime.text = utils.millisToMicrowaveTime(duration)
+                    progressBar.progress = 100
+                    txtRemaining.text = context.getString(R.string.remaining) + " " + utils.millisToMicrowaveTime(0)
                     if (outputFileCurrentSize > 0) {
                         txtOutputFileSize.text = utils.bytesToHuman(outputFileCurrentSize)
                     }
@@ -189,15 +210,55 @@ class MediaCompressor(private val context: Context) {
                 successHandler(outputFileUri, inputFileSize, outputFileCurrentSize)
             }
         }, { /* logs */ }, { statistics ->
+            lastProgressAt.set(SystemClock.elapsedRealtime())
             // update TextViews with stats
             Handler(Looper.getMainLooper()).post {
                 if (showProgress) { // only show time processed if video
-                    txtProcessedPercent.text = context.getString(R.string.format_percentage, (statistics.time.toFloat() / duration) * 100)
+                    val percent = if (duration > 0) {
+                        (statistics.time.toFloat() / duration * 100f).coerceIn(0f, 100f)
+                    } else {
+                        0f
+                    }
+                    progressBar.progress = percent.toInt()
+                    txtProcessedPercent.text = context.getString(R.string.format_percentage, percent)
                     txtProcessedTime.text = utils.millisToMicrowaveTime(statistics.time.toInt())
+                    val remaining = (duration - statistics.time).coerceAtLeast(0.0).toInt()
+                    txtRemaining.text = context.getString(R.string.remaining) + " " + utils.millisToMicrowaveTime(remaining)
                 }
                 txtOutputFileSize.text = utils.bytesToHuman(statistics.size)
             }
         })
+
+        // Stall watchdog: only a session that stops making progress is cancelled. A long but
+        // healthy compression (big file, slow device) keeps emitting statistics and is never
+        // killed by a fixed deadline.
+        if (!finished.get()) {
+            val watchdogTask = object : Runnable {
+                override fun run() {
+                    if (finished.get()) return
+                    val idleMs = SystemClock.elapsedRealtime() - lastProgressAt.get()
+                    if (idleMs >= STALL_TIMEOUT_MS) {
+                        if (finished.compareAndSet(false, true)) {
+                            Timber.w("ffmpeg made no progress for %d ms, cancelling session %d", idleMs, ffmpegSession.sessionId)
+                            FFmpegKit.cancel(ffmpegSession.sessionId)
+                            Handler(Looper.getMainLooper()).post {
+                                Toast.makeText(context, context.getString(R.string.error_timeout), Toast.LENGTH_LONG).show()
+                            }
+                            failureHandler(context.getString(R.string.error_timeout))
+                        }
+                    } else {
+                        watchdog.postDelayed(this, WATCHDOG_INTERVAL_MS)
+                    }
+                }
+            }
+            watchdog.postDelayed(watchdogTask, STALL_TIMEOUT_MS)
+        }
+    }
+
+    private companion object {
+        // no progress at all for this long means the session is stuck
+        const val STALL_TIMEOUT_MS = 5 * 60 * 1000L
+        const val WATCHDOG_INTERVAL_MS = 30 * 1000L
     }
 
     fun compressFiles(activity: Activity, inputFilesUri: ArrayList<Uri>, callback: (outcome: CompressionOutcome) -> Unit) {
