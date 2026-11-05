@@ -92,6 +92,11 @@
             android:name=".CacheCleanUpReceiver"
             android:enabled="true"
             android:exported="false" />
+        <!-- cancel action of the ongoing notification -->
+        <receiver
+            android:name=".CancelCompressionReceiver"
+            android:enabled="true"
+            android:exported="false" />
     </application>
 
 </manifest>

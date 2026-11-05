@@ -129,10 +129,17 @@ class HandleMediaActivity : AppCompatActivity() {
         } else {
             CompressionService.start(this)
             // callback
-            mediaCompressor.compressFiles(this, receivedMedia) { outcome ->
+            mediaCompressor.compressFiles(
+                this,
+                receivedMedia,
+                onProgress = { progress -> updateProgressNotification(progress) }
+            ) { outcome ->
                 // ffmpeg invokes this callback on its own worker thread, every UI call must be posted
                 runOnUiThread {
                     CompressionService.stop(this@HandleMediaActivity)
+                    // the task can be swiped away mid-compression, then there is no window left
+                    // to show a dialog on
+                    if (isFinishing || isDestroyed) return@runOnUiThread
                     val compressedMedia = outcome.uris
                     when {
                         compressedMedia.isEmpty() && outcome.errorOutput != null -> {
@@ -154,6 +161,32 @@ class HandleMediaActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+
+    /**
+     * Mirrors the in-app progress into the ongoing notification, which is the only thing the user
+     * sees once the app is in the background. Images have no statistics, so they only get a text.
+     */
+    private fun updateProgressNotification(progress: MediaCompressor.Progress) {
+        val percentText = getString(R.string.format_percentage, progress.percent)
+        val remaining = progress.remainingMillis?.let { utils.millisToMicrowaveTime(it) }
+        val text = when {
+            progress.isImage && progress.totalFiles > 1 ->
+                getString(R.string.notif_progress_image_multi, progress.currentFile, progress.totalFiles)
+            progress.isImage -> getString(R.string.notif_progress_image)
+            remaining != null && progress.totalFiles > 1 -> getString(
+                R.string.notif_progress_text_multi,
+                progress.currentFile, progress.totalFiles, percentText, remaining
+            )
+            remaining != null -> getString(R.string.notif_progress_text, percentText, remaining)
+            else -> percentText
+        }
+        Notifications.updateOngoing(
+            this,
+            text,
+            progress.percent.toInt(),
+            showProgress = remaining != null
+        )
     }
 
     /**
