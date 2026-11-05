@@ -11,6 +11,7 @@ import android.os.Build
 import android.os.Bundle
 import android.view.WindowManager
 import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.caydey.ffshare.extensions.parcelable
@@ -51,6 +52,21 @@ class HandleMediaActivity : AppCompatActivity() {
     private var needsStoragePermission = false
     private val saveLock = Any()
 
+    // true from the moment a batch starts until its outcome (or a cancel) arrives; only then is
+    // leaving the screen destructive enough to ask for confirmation
+    @Volatile
+    private var isCompressing = false
+    private var exitDialogShowing = false
+    private var exitDialog: AlertDialog? = null
+
+    /**
+     * Back button and the side-swipe back gesture both land here. Enabled only while a
+     * compression is running, so an accidental swipe cannot silently kill a batch.
+     */
+    private val backWhileCompressing = object : OnBackPressedCallback(false) {
+        override fun handleOnBackPressed() = confirmExitWhileCompressing()
+    }
+
     private companion object {
         const val REQUEST_NOTIFICATIONS = 300
     }
@@ -60,6 +76,8 @@ class HandleMediaActivity : AppCompatActivity() {
         setContentView(R.layout.activity_handle_media)
 
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+
+        onBackPressedDispatcher.addCallback(this, backWhileCompressing)
 
         // a new share starts with the encoder the user picked
         FFmpegParamMaker.forceSoftwareCodec = false
@@ -95,6 +113,43 @@ class HandleMediaActivity : AppCompatActivity() {
         // keep compressing while the app is in the background; the foreground service holds the process
         isInForeground = false
         super.onStop()
+    }
+
+    /** Keeps the back guard in sync with the actual state of the batch. */
+    private fun setCompressing(compressing: Boolean) {
+        isCompressing = compressing
+        backWhileCompressing.isEnabled = compressing
+        // the batch may end while the confirmation is on screen; it would be stale by then
+        if (!compressing) dismissExitDialog()
+    }
+
+    private fun dismissExitDialog() {
+        if (!exitDialogShowing) return
+        exitDialogShowing = false
+        exitDialog?.dismiss()
+        exitDialog = null
+    }
+
+    /**
+     * Second chance before a back gesture (or the back button) kills a running batch. Only
+     * armed while [isCompressing], so leaving an idle screen still closes it immediately.
+     */
+    private fun confirmExitWhileCompressing() {
+        if (!isCompressing || exitDialogShowing) return
+        exitDialogShowing = true
+        exitDialog = AlertDialog.Builder(this)
+            .setTitle(R.string.exit_confirm_title)
+            .setMessage(R.string.exit_confirm_message)
+            .setPositiveButton(R.string.exit_confirm_ok) { _, _ ->
+                dismissExitDialog()
+                setCompressing(false)
+                mediaCompressor.cancelAllOperations()
+                finish()
+            }
+            .setNegativeButton(R.string.exit_confirm_cancel) { _, _ -> dismissExitDialog() }
+            .setOnCancelListener { dismissExitDialog() }
+            .setCancelable(true)
+            .show()
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
@@ -137,6 +192,7 @@ class HandleMediaActivity : AppCompatActivity() {
             finish()
         } else {
             resetSaveState()
+            setCompressing(true)
             CompressionService.start(this)
             // callback
             mediaCompressor.compressFiles(
@@ -147,6 +203,7 @@ class HandleMediaActivity : AppCompatActivity() {
             ) { outcome ->
                 // ffmpeg invokes this callback on its own worker thread, every UI call must be posted
                 runOnUiThread {
+                    setCompressing(false)
                     CompressionService.stop(this@HandleMediaActivity)
                     // the task can be swiped away mid-compression, then there is no window left
                     // to show a dialog on

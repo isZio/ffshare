@@ -14,6 +14,10 @@
     <string name="ffmpeg_canceled">已取消</string>
 
     <string name="close">关闭</string>
+    <string name="exit_confirm_title">确定退出压缩？</string>
+    <string name="exit_confirm_message">侧滑退出压缩将会取消，可通过上滑回到桌面</string>
+    <string name="exit_confirm_ok">确认</string>
+    <string name="exit_confirm_cancel">取消</string>
     <string name="ffmpegCommandTitle">FFmpeg命令</string>
     <string name="ffmpegOutputTitle">FFmpeg输出</string>
 

@@ -14,6 +14,10 @@
     <string name="ffmpeg_canceled">Canceled</string>
 
     <string name="close">Close</string>
+    <string name="exit_confirm_title">Cancel compression?</string>
+    <string name="exit_confirm_message">Going back cancels the compression. Swipe up instead to return to the home screen and let it keep running.</string>
+    <string name="exit_confirm_ok">Exit</string>
+    <string name="exit_confirm_cancel">Cancel</string>
     <string name="ffmpegCommandTitle">FFmpeg command</string>
     <string name="ffmpegOutputTitle">FFmpeg output</string>
 
