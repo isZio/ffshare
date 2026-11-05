@@ -1,32 +1,57 @@
-# <img src="fastlane/metadata/android/en-US/images/icon.png" height="32"> FFShare
+# zShrink
 
-[<img src="https://f-droid.org/badge/get-it-on.png"
-      alt="Get it on F-Droid"
-      height="80">](https://f-droid.org/app/com.caydey.ffshare)
-[<img src="https://github.com/user-attachments/assets/713d71c5-3dec-4ec4-a3f2-8d28d025a9c6"
-      alt='Get it on Obtainium'
-      height="80">](https://apps.obtainium.imranr.dev/redirect?r=obtainium://app/%7B%22id%22%3A%22com.caydey.ffshare%22%2C%22url%22%3A%22https%3A%2F%2Fgithub.com%2Fcaydey%2Fffshare%22%2C%22author%22%3A%22caydey%22%2C%22name%22%3A%22FFShare%22%2C%22preferredApkIndex%22%3A1%2C%22additionalSettings%22%3A%22%7B%5C%22includePrereleases%5C%22%3Afalse%2C%5C%22fallbackToOlderReleases%5C%22%3Atrue%2C%5C%22filterReleaseTitlesByRegEx%5C%22%3A%5C%22%5C%22%2C%5C%22filterReleaseNotesByRegEx%5C%22%3A%5C%22%5C%22%2C%5C%22verifyLatestTag%5C%22%3Afalse%2C%5C%22dontSortReleasesList%5C%22%3Afalse%2C%5C%22useLatestAssetDateAsReleaseDate%5C%22%3Afalse%2C%5C%22releaseTitleAsVersion%5C%22%3Afalse%2C%5C%22trackOnly%5C%22%3Afalse%2C%5C%22versionExtractionRegEx%5C%22%3A%5C%22%5C%22%2C%5C%22matchGroupToUse%5C%22%3A%5C%22%5C%22%2C%5C%22versionDetection%5C%22%3Atrue%2C%5C%22releaseDateAsVersion%5C%22%3Afalse%2C%5C%22useVersionCodeAsOSVersion%5C%22%3Afalse%2C%5C%22apkFilterRegEx%5C%22%3A%5C%22%5C%22%2C%5C%22invertAPKFilter%5C%22%3Afalse%2C%5C%22autoApkFilterByArch%5C%22%3Atrue%2C%5C%22appName%5C%22%3A%5C%22%5C%22%2C%5C%22shizukuPretendToBeGooglePlay%5C%22%3Afalse%2C%5C%22allowInsecure%5C%22%3Afalse%2C%5C%22exemptFromBackgroundUpdates%5C%22%3Afalse%2C%5C%22skipUpdateNotifications%5C%22%3Afalse%2C%5C%22about%5C%22%3A%5C%22%5C%22%2C%5C%22refreshBeforeDownload%5C%22%3Afalse%7D%22%2C%22overrideSource%22%3A%22GitHub%22%7D)
+A private fork of [FFShare](https://github.com/caydey/ffshare): compress images, videos and
+audio with FFmpeg, then save the result to your gallery or to a folder you pick.
 
-[![GitHub release (latest by date)](https://img.shields.io/github/v/release/caydey/FFShare)](https://github.com/caydey/ffshare/releases/latest)
-[![GitHub all releases](https://img.shields.io/github/downloads/caydey/ffshare/total)](https://github.com/caydey/ffshare/releases/latest)
-[![GitHub license](https://img.shields.io/github/license/caydey/ffshare)](https://github.com/caydey/ffshare/blob/master/LICENSE)
+> **This is a modified fork, not the original app.** It is based on FFShare by
+> [caydey](https://github.com/caydey/ffshare), released under GPL-3.0, and stays under the same
+> license. Package name: `com.ziomo.zshrink`.
 
-An android app to compress image, video and audio files through ffmpeg before sharing them
+## Changes compared to upstream FFShare
 
-## Images
+- Rebranded to **zShrink** (app name, package id and theme)
+- **Sharing the compressed file out of the app was removed** — results are saved instead
+  (automatic save with a configurable destination, or an explicit "save" action)
+- Automatic save after compression, to the system gallery (`Movies|Pictures|Music/zShrink`) or
+  to a folder picked via SAF
+- Manual cache cleanup, and a single one-shot cleanup alarm instead of the old 12-hour
+  repeating wake-up
+- Hardware (MediaCodec) H.264/H.265 encoding options, with automatic software fallback
+- Default encoder pinned to `libx264`: upstream let FFmpeg pick `h264_mediacodec`, which
+  rejects yuv420p input on many devices and made compression fail
+- Stall watchdog: a session that reports no progress for 5 minutes is cancelled, while long
+  but healthy compressions are never killed by a fixed deadline
+- Compression keeps running while the app is in the background (foreground service) and posts
+  a notification when it finishes
+- Progress bar with remaining time; result dialog shows size ratio, elapsed time and can open
+  the saved file
+- Offline settings guide (bundled HTML)
+- Bug fixes: AAC spelling, worker-thread Toast crash, Exif copy crash, settings icon-space
+  padding
 
-<p align="left">
-      <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1.png" width="270">
-      <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/2.png" width="270">
-      <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/3.png" width="270">
-      <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/4.png" width="270">
-</p>
+## Requirements
+
+- Android 8.0 (API 26) or newer
+- `arm64-v8a` only
 
 ## Building
 
-- Create ffmpeg-kit binaries by running `./build_ffmpegkit.sh`
+```bash
+./gradlew assembleDebug
+# or, for a minified build
+./gradlew assembleRelease
+```
 
-## Used Libraries
+FFmpeg comes from the maintained Maven artifact
+`dev.ffmpegkit-maintained:ffmpeg-kit-full-gpl` (same package and API as ffmpeg-kit).
 
-- [FFmpegKitNext](https://github.com/arthenica/ffmpeg-kit-next)
+## Used libraries
+
+- ffmpeg-kit (maintained drop-in fork)
 - [Timber](https://github.com/JakeWharton/timber)
+
+## License
+
+GNU General Public License v3.0 — see [LICENSE](LICENSE).
+
+Original project: FFShare by caydey — <https://github.com/caydey/ffshare> (GPL-3.0).

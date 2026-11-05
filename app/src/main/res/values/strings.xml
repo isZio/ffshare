@@ -159,4 +159,8 @@
     <string name="notif_compressing_title">Compressing…</string>
     <string name="notif_compressing_text">zShrink is working in the background</string>
     <string name="notif_done_title">Compression finished</string>
+    <string name="about_title">About</string>
+    <string name="about_summary">Based on FFShare by caydey · GPL-3.0</string>
+    <string name="about_message">zShrink %1$s\n\nA modified fork of FFShare by caydey, licensed under GNU GPL-3.0.\nUpstream: https://github.com/caydey/ffshare</string>
+    <string name="about_open_upstream">View upstream</string>
 </resources>

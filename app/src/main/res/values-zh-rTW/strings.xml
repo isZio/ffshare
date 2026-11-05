@@ -158,4 +158,8 @@
     <string name="notif_compressing_title">正在壓縮…</string>
     <string name="notif_compressing_text">zShrink 正在背景處理</string>
     <string name="notif_done_title">壓縮完成</string>
+    <string name="about_title">關於</string>
+    <string name="about_summary">基於 FFShare（caydey）修改 · GPL-3.0</string>
+    <string name="about_message">zShrink %1$s\n\n本專案是 FFShare（作者 caydey）的修改版，遵循 GNU GPL-3.0 授權。\n原專案：https://github.com/caydey/ffshare</string>
+    <string name="about_open_upstream">檢視原專案</string>
 </resources>

@@ -47,6 +47,7 @@ class PreferencesFragment : PreferenceFragmentCompat() {
         dynamicallyAddCustomParamTooltips()
         setupSavePreferences()
         setupCachePreference()
+        setupAboutPreference()
     }
 
     override fun onResume() {
@@ -119,6 +120,22 @@ class PreferencesFragment : PreferenceFragmentCompat() {
     private fun setupCachePreference() {
         findPreference<Preference>("pref_cache_cleanup")?.setOnPreferenceClickListener {
             confirmClearCache()
+            true
+        }
+    }
+
+    private fun setupAboutPreference() {
+        findPreference<Preference>("pref_about")?.setOnPreferenceClickListener {
+            AlertDialog.Builder(requireContext())
+                .setTitle(R.string.about_title)
+                .setMessage(getString(R.string.about_message, App.versionName))
+                .setPositiveButton(R.string.close, null)
+                .setNeutralButton(R.string.about_open_upstream) { _, _ ->
+                    runCatching {
+                        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/caydey/ffshare")))
+                    }
+                }
+                .show()
             true
         }
     }

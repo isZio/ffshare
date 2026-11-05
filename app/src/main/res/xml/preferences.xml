@@ -228,4 +228,17 @@
             android:summary="@string/settings_guide_summary" />
     </PreferenceCategory>
 
+    <PreferenceCategory
+        android:key="prefs_about"
+        app:iconSpaceReserved="false"
+        android:title="@string/about_title">
+
+        <Preference
+            android:key="pref_about"
+            android:persistent="false"
+            app:iconSpaceReserved="false"
+            android:title="@string/app_name"
+            android:summary="@string/about_summary" />
+    </PreferenceCategory>
+
 </PreferenceScreen>
