@@ -42,6 +42,15 @@ class HandleMediaActivity : AppCompatActivity() {
     // whether the activity is visible, used to decide if a completion notification is needed
     private var isInForeground = false
 
+    // outputs are copied to their final location as soon as each file finishes, so a batch that
+    // gets interrupted halfway keeps whatever was already compressed
+    private val savedUris = mutableListOf<Uri>()
+    private val unsavedUris = mutableListOf<Uri>() // cache uris whose immediate save failed
+    private var savedLocation: String? = null
+    private var saveFailedCount = 0
+    private var needsStoragePermission = false
+    private val saveLock = Any()
+
     private companion object {
         const val REQUEST_NOTIFICATIONS = 300
     }
@@ -127,12 +136,14 @@ class HandleMediaActivity : AppCompatActivity() {
             Timber.d("No files found in shared intent")
             finish()
         } else {
+            resetSaveState()
             CompressionService.start(this)
             // callback
             mediaCompressor.compressFiles(
                 this,
                 receivedMedia,
-                onProgress = { progress -> updateProgressNotification(progress) }
+                onProgress = { progress -> updateProgressNotification(progress) },
+                onFileCompressed = { uri -> persistCompressedFile(uri) }
             ) { outcome ->
                 // ffmpeg invokes this callback on its own worker thread, every UI call must be posted
                 runOnUiThread {
@@ -155,13 +166,69 @@ class HandleMediaActivity : AppCompatActivity() {
                             }
                         }
                         compressedMedia.isEmpty() -> finish()
-                        settings.autoSaveEnabled -> saveThenShowResult(outcome)
+                        settings.autoSaveEnabled -> {
+                            // normally everything was already copied file by file; only the
+                            // pre-Q "no write permission yet" case still needs the old flow
+                            if (savedCountSnapshot() == 0 && needsStoragePermission) {
+                                saveThenShowResult(outcome)
+                            } else {
+                                showResult(outcome, savedResult())
+                            }
+                        }
                         else -> showResult(outcome, null)
                     }
                 }
             }
         }
     }
+
+    /** Clears the save bookkeeping whenever a batch (re)starts. */
+    private fun resetSaveState() {
+        synchronized(saveLock) {
+            savedUris.clear()
+            unsavedUris.clear()
+            savedLocation = null
+            saveFailedCount = 0
+            needsStoragePermission = false
+        }
+    }
+
+    /**
+     * Copies one finished output to its persistent destination right away, while the rest of the
+     * batch is still being compressed. Runs on the ffmpeg worker thread (never on the UI thread)
+     * because copying a large video takes a while.
+     */
+    private fun persistCompressedFile(uri: Uri) {
+        if (!settings.autoSaveEnabled) return // the user saves manually from the result dialog
+        val result = runCatching {
+            MediaSaver.saveAll(applicationContext, listOf(uri), settings.autoSaveTreeUri)
+        }.getOrElse {
+            Timber.w(it, "Unable to save the compressed file")
+            MediaSaver.SaveResult(0, 1, "")
+        }
+        synchronized(saveLock) {
+            if (result.savedCount > 0) {
+                savedUris.addAll(result.savedUris)
+                if (result.location.isNotBlank()) savedLocation = result.location
+            } else {
+                unsavedUris.add(uri)
+                saveFailedCount += result.failedCount.coerceAtLeast(1)
+            }
+            needsStoragePermission = needsStoragePermission || result.needsStoragePermission
+        }
+        Timber.d("Saved right after compression: %d ok, %d failed", result.savedCount, result.failedCount)
+    }
+
+    private fun savedResult(): MediaSaver.SaveResult = synchronized(saveLock) {
+        MediaSaver.SaveResult(
+            savedCount = savedUris.size,
+            failedCount = saveFailedCount,
+            location = savedLocation.orEmpty(),
+            savedUris = savedUris.toList()
+        )
+    }
+
+    private fun savedCountSnapshot(): Int = synchronized(saveLock) { savedUris.size }
 
     /**
      * Mirrors the in-app progress into the ongoing notification, which is the only thing the user
@@ -308,8 +375,10 @@ class HandleMediaActivity : AppCompatActivity() {
      */
     private fun saveOnly(outcome: MediaCompressor.CompressionOutcome) {
         Toast.makeText(this, getString(R.string.save_in_progress), Toast.LENGTH_SHORT).show()
+        // files that were already persisted right after compression must not be copied twice
+        val targets = synchronized(saveLock) { unsavedUris.ifEmpty { outcome.uris } }
         Thread {
-            val result = MediaSaver.saveAll(applicationContext, outcome.uris, settings.autoSaveTreeUri)
+            val result = MediaSaver.saveAll(applicationContext, targets, settings.autoSaveTreeUri)
             runOnUiThread {
                 if (isFinishing || isDestroyed) return@runOnUiThread
                 if (result.needsStoragePermission) {

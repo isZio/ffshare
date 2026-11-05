@@ -317,6 +317,7 @@ class MediaCompressor(private val context: Context) {
         activity: Activity,
         inputFilesUri: ArrayList<Uri>,
         onProgress: (Progress) -> Unit = {},
+        onFileCompressed: (Uri) -> Unit = {},
         callback: (outcome: CompressionOutcome) -> Unit
     ) {
         val txtCommandNumber: TextView = activity.findViewById(R.id.txtCommandNumber)
@@ -363,6 +364,10 @@ class MediaCompressor(private val context: Context) {
                         totalInputFileSize += inputFileSize
                         totalOutputFileSize += outputFileSize
                         compressedFiles.add(uri)
+                        // hand the finished file over right away: a batch that gets interrupted
+                        // must not drag the already compressed outputs down with it
+                        runCatching { onFileCompressed(uri) }
+                            .onFailure { Timber.w(it, "onFileCompressed failed for %s", uri) }
                         iteratorFunction(i+1, false) // call to self with error flag false
                     }
                 )
